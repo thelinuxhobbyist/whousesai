@@ -13,14 +13,14 @@ import {
   History,
   Flag,
   ExternalLink,
-  Layers,
-  CheckCircle2,
   Share2,
   Calendar,
   UserCheck,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Link2
 } from 'lucide-react';
+import { Claim } from '@/lib/types';
 
 export default function EntityDetailPage() {
   const params = useParams();
@@ -200,85 +200,119 @@ export default function EntityDetailPage() {
           </p>
         </section>
 
-        {/* Section: AI Uses (Structured Applications) */}
-        {content.ai_uses && content.ai_uses.length > 0 && (
+        {/* Section: AI Claims — evidenced use cases */}
+        {content.claims && content.claims.length > 0 ? (
           <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-            <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
-              <CheckCircle2 className="w-5 h-5 text-[#3F4FBF]" />
-              AI Applications & Use Cases
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {content.ai_uses.map((use, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A]"
-                >
-                  <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF]" />
-                  {use}
+            <div className="border-b border-[#E3E5E9] pb-3 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+              <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">AI Use Cases & Evidence</h2>
+            </div>
+            <p className="text-[12.5px] text-[#8A93A3]">
+              Each claim links directly to the evidence that supports it.
+            </p>
+            <div className="space-y-3 pt-1">
+              {content.claims.map((claim: Claim, idx: number) => (
+                <div key={idx} className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] overflow-hidden">
+                  {/* Claim header */}
+                  <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[#E3E5E9] bg-white">
+                    <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF] flex-shrink-0" />
+                    <span className="text-[14px] font-semibold text-[#1E2A3A]">{claim.use}</span>
+                    {claim.tool && (
+                      <Link
+                        href={`/explore?tool=${encodeURIComponent(claim.tool)}`}
+                        className="mono text-[11.5px] font-semibold px-2.5 py-0.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 hover:border-[#3F4FBF] transition-colors"
+                      >
+                        {claim.tool}
+                      </Link>
+                    )}
+                  </div>
+                  {/* Note + sources */}
+                  <div className="px-4 py-3 space-y-2.5">
+                    {claim.note && (
+                      <p className="text-[13.5px] text-[#5B6472] leading-relaxed">{claim.note}</p>
+                    )}
+                    {claim.sources && claim.sources.length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        {claim.sources.map((src, sidx) => (
+                          <a
+                            key={sidx}
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-1.5 text-[12.5px] text-[#3F4FBF] hover:underline"
+                          >
+                            <Link2 className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
+                            <span className="truncate">{src.title || src.url}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50 group-hover:opacity-100" />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-[#8A93A3] italic">No evidence attached to this claim yet.</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </section>
+        ) : (
+          /* Legacy fallback: flat ai_uses + ai_tools + sources for old revisions */
+          <>
+            {content.ai_uses && content.ai_uses.length > 0 && (
+              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
+                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
+                  AI Applications & Use Cases
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {content.ai_uses.map((use, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A]">
+                      <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF]" />
+                      {use}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {content.ai_tools && content.ai_tools.length > 0 && (
+              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
+                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
+                  AI Tools Deployed
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {content.ai_tools.map((tool, idx) => (
+                    <Link key={idx} href={`/explore?tool=${encodeURIComponent(tool)}`}
+                      className="mono flex items-center gap-2 px-3.5 py-1.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] font-semibold text-[13px] hover:border-[#3F4FBF] transition-all">
+                      <span>{tool}</span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+            <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
+              <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
+                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+                Sources & Evidence
+              </h2>
+              {content.sources && content.sources.length > 0 ? (
+                <div className="space-y-3 pt-2">
+                  {content.sources.map((src, idx) => (
+                    <a key={idx} href={src.url} target="_blank" rel="noopener noreferrer"
+                      className="group flex items-start justify-between p-4 rounded bg-[#F8F9FB] hover:bg-[#E3E5E9]/60 border border-[#E3E5E9] transition-colors gap-4">
+                      <div className="space-y-1 overflow-hidden">
+                        <span className="text-[14px] font-semibold text-[#1E2A3A] group-hover:text-[#3F4FBF] transition-colors block truncate">{src.title || src.url}</span>
+                        <span className="mono text-[11.5px] text-[#8A93A3] block truncate">{src.url}</span>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-[#8A93A3] group-hover:text-[#3F4FBF] flex-shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13.5px] text-[#8A93A3] italic">No external sources attached to this entry yet.</p>
+              )}
+            </section>
+          </>
         )}
-
-        {/* Section: AI Tools Deployed */}
-        {content.ai_tools && content.ai_tools.length > 0 && (
-          <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-            <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
-              <Layers className="w-5 h-5 text-[#3F4FBF]" />
-              AI Tools Deployed
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {content.ai_tools.map((tool, idx) => (
-                <Link
-                  key={idx}
-                  href={`/explore?tool=${encodeURIComponent(tool)}`}
-                  className="mono flex items-center gap-2 px-3.5 py-1.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] font-semibold text-[13px] hover:border-[#3F4FBF] transition-all"
-                >
-                  <span>{tool}</span>
-                  <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Section: Evidence Sources */}
-        <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-          <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
-            <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
-            Sources & Evidence
-          </h2>
-          <p className="text-[12.5px] text-[#8A93A3]">
-            WhoUsesAI encourages evidence-based contributions. All claims are supported by public references.
-          </p>
-
-          {content.sources && content.sources.length > 0 ? (
-            <div className="space-y-3 pt-2">
-              {content.sources.map((src, idx) => (
-                <a
-                  key={idx}
-                  href={src.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-start justify-between p-4 rounded bg-[#F8F9FB] hover:bg-[#E3E5E9]/60 border border-[#E3E5E9] transition-colors gap-4"
-                >
-                  <div className="space-y-1 overflow-hidden">
-                    <span className="text-[14px] font-semibold text-[#1E2A3A] group-hover:text-[#3F4FBF] transition-colors block truncate">
-                      {src.title || src.url}
-                    </span>
-                    <span className="mono text-[11.5px] text-[#8A93A3] block truncate">
-                      {src.url}
-                    </span>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-[#8A93A3] group-hover:text-[#3F4FBF] flex-shrink-0" />
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13.5px] text-[#8A93A3] italic">No external sources attached to this entry yet.</p>
-          )}
-        </section>
       </main>
 
       <Footer />

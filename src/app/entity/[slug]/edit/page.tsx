@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Entity, EntityType, RevisionContent, SourceItem } from '@/lib/types';
+import { Entity, EntityType, RevisionContent, SourceItem, Claim } from '@/lib/types';
 import { normalizeEntityType } from '@/lib/entityTypes';
 import Link from 'next/link';
 import { Plus, Trash2, ArrowLeft, Save, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -24,11 +24,7 @@ export default function EditEntityPage() {
   const [industry, setIndustry] = useState('');
   const [country, setCountry] = useState('');
   const [description, setDescription] = useState('');
-  const [aiUses, setAiUses] = useState<string[]>([]);
-  const [newUseInput, setNewUseInput] = useState('');
-  const [aiTools, setAiTools] = useState<string[]>([]);
-  const [newToolInput, setNewToolInput] = useState('');
-  const [sources, setSources] = useState<SourceItem[]>([]);
+  const [claims, setClaims] = useState<Claim[]>([]);
   const [editSummary, setEditSummary] = useState('');
   const [editorId, setEditorId] = useState('Anonymous Contributor');
 
@@ -61,9 +57,25 @@ export default function EditEntityPage() {
         setIndustry(ent.industry);
         setCountry(ent.country);
         setDescription(rev.description || '');
-        setAiUses(rev.ai_uses || []);
-        setAiTools(rev.ai_tools || []);
-        setSources(rev.sources || [{ title: '', url: '' }]);
+        // Prefer structured claims; migrate legacy flat arrays if no claims present
+        if (rev.claims && rev.claims.length > 0) {
+          setClaims(rev.claims);
+        } else {
+          // Build one claim per legacy ai_use, attach all sources to first claim
+          const legacyUses = rev.ai_uses || [];
+          const legacyTools = rev.ai_tools || [];
+          const legacySources = rev.sources || [];
+          if (legacyUses.length > 0) {
+            setClaims(legacyUses.map((use: string, i: number) => ({
+              use,
+              tool: legacyTools[i] || undefined,
+              note: '',
+              sources: i === 0 ? legacySources : [],
+            })));
+          } else {
+            setClaims([{ use: '', tool: '', note: '', sources: [{ title: '', url: '' }] }]);
+          }
+        }
       }
     } catch (err) {
       console.error(err);
@@ -72,41 +84,38 @@ export default function EditEntityPage() {
     }
   };
 
-  const handleAddUse = () => {
-    if (newUseInput.trim() && !aiUses.includes(newUseInput.trim())) {
-      setAiUses([...aiUses, newUseInput.trim()]);
-      setNewUseInput('');
-    }
+  const addClaim = () => {
+    setClaims([...claims, { use: '', tool: '', note: '', sources: [{ title: '', url: '' }] }]);
   };
 
-  const handleRemoveUse = (index: number) => {
-    setAiUses(aiUses.filter((_, i) => i !== index));
+  const removeClaim = (ci: number) => {
+    setClaims(claims.filter((_, i) => i !== ci));
   };
 
-  const handleAddTool = () => {
-    const tool = newToolInput.trim();
-    if (tool && !aiTools.includes(tool)) {
-      setAiTools([...aiTools, tool]);
-      setNewToolInput('');
-    }
+  const updateClaim = (ci: number, field: keyof Omit<Claim, 'sources'>, value: string) => {
+    const next = [...claims];
+    (next[ci] as any)[field] = value;
+    setClaims(next);
   };
 
-  const handleRemoveTool = (index: number) => {
-    setAiTools(aiTools.filter((_, i) => i !== index));
+  const addClaimSource = (ci: number) => {
+    const next = [...claims];
+    next[ci] = { ...next[ci], sources: [...(next[ci].sources || []), { title: '', url: '' }] };
+    setClaims(next);
   };
 
-  const handleAddSource = () => {
-    setSources([...sources, { title: '', url: '' }]);
+  const updateClaimSource = (ci: number, si: number, field: 'title' | 'url', value: string) => {
+    const next = [...claims];
+    const srcs = [...(next[ci].sources || [])];
+    srcs[si] = { ...srcs[si], [field]: value };
+    next[ci] = { ...next[ci], sources: srcs };
+    setClaims(next);
   };
 
-  const handleUpdateSource = (index: number, field: 'title' | 'url', value: string) => {
-    const updated = [...sources];
-    updated[index][field] = value;
-    setSources(updated);
-  };
-
-  const handleRemoveSource = (index: number) => {
-    setSources(sources.filter((_, i) => i !== index));
+  const removeClaimSource = (ci: number, si: number) => {
+    const next = [...claims];
+    next[ci] = { ...next[ci], sources: next[ci].sources.filter((_, i) => i !== si) };
+    setClaims(next);
   };
 
   const handleSubmit = async (e: React.FormEvent, forceNewBase = false) => {
@@ -117,15 +126,26 @@ export default function EditEntityPage() {
     setErrorMessage(null);
     setConflictModal(false);
 
+    const cleanedClaims = claims
+      .filter((c) => c.use.trim().length > 0)
+      .map((c) => ({
+        ...c,
+        tool: c.tool?.trim() || undefined,
+        note: c.note?.trim() || undefined,
+        sources: (c.sources || []).filter((s) => s.url.trim().length > 0),
+      }));
+
     const updatedContent: RevisionContent = {
       name,
       type,
       industry,
       country,
       description,
-      ai_uses: aiUses,
-      ai_tools: aiTools,
-      sources: sources.filter((s) => s.url.trim().length > 0)
+      claims: cleanedClaims,
+      // Derive legacy fields so old code reading them still works
+      ai_uses: cleanedClaims.map((c) => c.use),
+      ai_tools: [...new Set(cleanedClaims.map((c) => c.tool).filter(Boolean) as string[])],
+      sources: cleanedClaims.flatMap((c) => c.sources),
     };
 
     const baseRevId = forceNewBase && entity.current_revision ? entity.current_revision.id : entity.current_revision.id;
@@ -311,158 +331,115 @@ export default function EditEntityPage() {
             </div>
           </div>
 
-          {/* AI Applications */}
-          <div className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-5 sm:p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-            <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-              2. AI Applications & Use Cases
-            </h3>
-
-            <div className="flex flex-wrap gap-2">
-              {aiUses.map((use, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-[#F8F9FB] text-[#1E2A3A] text-xs font-medium border border-[#E3E5E9]"
-                >
-                  {use}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveUse(idx)}
-                    className="hover:text-[#A85238]"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add use case…"
-                value={newUseInput}
-                onChange={(e) => setNewUseInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddUse();
-                  }
-                }}
-                className="flex-grow min-w-0 rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3.5 py-2 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:border-[#3F4FBF] focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={handleAddUse}
-                className="px-4 py-2 rounded bg-[#F3F4F6] text-xs font-semibold text-[#1E2A3A] border border-[#E3E5E9] hover:bg-[#E3E5E9] shrink-0"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-
-          {/* AI Tools */}
-          <div className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-5 sm:p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-            <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-              3. AI Tools Deployed
-            </h3>
-
-            {aiTools.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {aiTools.map((tool, idx) => (
-                  <span
-                    key={`${tool}-${idx}`}
-                    className="mono inline-flex items-center gap-1.5 px-3 py-1 rounded bg-[#EEEDFE] text-[#3F4FBF] text-xs font-medium border border-[#E3E5E9]"
-                  >
-                    {tool}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTool(idx)}
-                      className="hover:text-[#A85238]"
-                      aria-label={`Remove ${tool}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[13px] text-[#8A93A3]">No tools added yet.</p>
-            )}
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="AI tool name..."
-                value={newToolInput}
-                onChange={(e) => setNewToolInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTool();
-                  }
-                }}
-                className="mono flex-grow min-w-0 rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3.5 py-2 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:border-[#3F4FBF] focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={handleAddTool}
-                className="px-4 py-2 rounded bg-[#F3F4F6] text-xs font-semibold text-[#1E2A3A] border border-[#E3E5E9] hover:bg-[#E3E5E9] shrink-0"
-              >
-                Add Tool
-              </button>
-            </div>
-          </div>
-
-          {/* Sources */}
+          {/* Claims — evidenced use cases */}
           <div className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-5 sm:p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
             <div className="flex items-center justify-between border-b border-[#E3E5E9] pb-3">
-              <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A]">4. Sources & Evidence</h3>
+              <div>
+                <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A]">2. AI Use Cases & Evidence</h3>
+                <p className="text-[12px] text-[#8A93A3] mt-0.5">Each claim gets its own use case label, optional tool, and directly attached evidence.</p>
+              </div>
               <button
                 type="button"
-                onClick={handleAddSource}
-                className="flex items-center gap-1 text-xs font-semibold text-[#3F4FBF] hover:underline"
+                onClick={addClaim}
+                className="flex items-center gap-1 text-xs font-semibold text-[#3F4FBF] hover:underline shrink-0"
               >
-                <Plus className="w-4 h-4" /> Add Source
+                <Plus className="w-4 h-4" /> Add Claim
               </button>
             </div>
 
-            <div className="space-y-3">
-              {sources.map((src, idx) => (
-                <div key={idx} className="p-3.5 rounded bg-[#F8F9FB] border border-[#E3E5E9] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#8A93A3]">Source #{idx + 1}</span>
-                    {sources.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSource(idx)}
-                        className="text-xs text-[#A85238] hover:underline"
-                      >
-                        Remove
-                      </button>
+            <div className="space-y-4">
+              {claims.map((claim, ci) => (
+                <div key={ci} className="rounded-[6px] border border-[#E3E5E9] overflow-hidden">
+                  {/* Claim header row */}
+                  <div className="bg-[#F8F9FB] px-4 py-3 border-b border-[#E3E5E9] flex items-center justify-between gap-2">
+                    <span className="text-[11.5px] font-semibold text-[#8A93A3] uppercase tracking-wider">Claim #{ci + 1}</span>
+                    {claims.length > 1 && (
+                      <button type="button" onClick={() => removeClaim(ci)} className="text-xs text-[#A85238] hover:underline">Remove</button>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Source title"
-                    value={src.title}
-                    onChange={(e) => handleUpdateSource(idx, 'title', e.target.value)}
-                    className="w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Source URL"
-                    value={src.url}
-                    onChange={(e) => handleUpdateSource(idx, 'url', e.target.value)}
-                    className="mono w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"
-                  />
+                  <div className="p-4 space-y-3 bg-white">
+                    {/* Use + Tool row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">Use Case *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Customer Service Automation"
+                          value={claim.use}
+                          onChange={(e) => updateClaim(ci, 'use', e.target.value)}
+                          className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">AI Tool (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Microsoft Copilot"
+                          value={claim.tool || ''}
+                          onChange={(e) => updateClaim(ci, 'tool', e.target.value)}
+                          className="mono w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    {/* Note */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">Brief description (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="One sentence describing what this does"
+                        value={claim.note || ''}
+                        onChange={(e) => updateClaim(ci, 'note', e.target.value)}
+                        className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
+                      />
+                    </div>
+                    {/* Sources for this claim */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider">Evidence</span>
+                        <button type="button" onClick={() => addClaimSource(ci)} className="text-[11px] font-semibold text-[#3F4FBF] hover:underline">+ Add source</button>
+                      </div>
+                      {(claim.sources || []).map((src, si) => (
+                        <div key={si} className="flex gap-2 items-start">
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Source title"
+                              value={src.title}
+                              onChange={(e) => updateClaimSource(ci, si, 'title', e.target.value)}
+                              className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] focus:outline-none"
+                            />
+                            <input
+                              type="url"
+                              placeholder="https://..."
+                              value={src.url}
+                              onChange={(e) => updateClaimSource(ci, si, 'url', e.target.value)}
+                              className="mono w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] focus:outline-none"
+                            />
+                          </div>
+                          <button type="button" onClick={() => removeClaimSource(ci, si)} className="mt-1.5 text-[#A85238] hover:text-[#8B3220]">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={addClaim}
+              className="w-full py-2.5 rounded border border-dashed border-[#E3E5E9] text-[13px] text-[#8A93A3] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add another claim
+            </button>
           </div>
 
           {/* Audit Trail Metadata */}
           <div className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-5 sm:p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
             <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-              5. Revision Summary & Contributor ID
+              3. Revision Summary & Contributor ID
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

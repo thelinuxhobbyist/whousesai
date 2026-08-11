@@ -10,12 +10,29 @@ export interface SourceItem {
   title: string;
 }
 
+/**
+ * A single evidenced AI claim: one use case + optional tool + optional note,
+ * each with its own attached sources.
+ */
+export interface Claim {
+  use: string;          // e.g. "Customer Service Automation"
+  tool?: string;        // e.g. "TOBi AI" (optional)
+  note?: string;        // one-sentence description of what this does
+  sources: SourceItem[];
+}
+
 export interface RevisionContent {
   name: string;
   type: EntityType;
   industry: string;
   country: string;
   description: string;
+  /** Structured, evidenced claims — the primary data model going forward */
+  claims?: Claim[];
+  /**
+   * Legacy flat arrays kept for backwards-compatibility with old revisions.
+   * Readers should prefer `claims` when present.
+   */
   ai_uses: string[];
   ai_tools: string[];
   sources: SourceItem[];
