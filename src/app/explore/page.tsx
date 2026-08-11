@@ -93,10 +93,10 @@ function ExploreContent() {
         <div className="space-y-1">
           <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
             <BookOpen className="w-8 h-8 text-[#3F4FBF]" />
-            Explore Directory
+            Explore AI Adoption
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
-            Browse all documented entities, filtered by sector, country, or specific AI tool deployed.
+            Browse documented AI use by organisation, category, or AI tool.
           </p>
         </div>
 
@@ -118,7 +118,7 @@ function ExploreContent() {
             <Search className="w-4 h-4 absolute left-3 top-3 text-[#8A93A3]" />
             <input
               type="text"
-              placeholder="Keywords or names..."
+              placeholder="Search by name or keyword…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] pl-9 pr-3 py-2 text-xs text-[#1E2A3A] focus:border-[#3F4FBF] focus:outline-none"

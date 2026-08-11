@@ -338,7 +338,7 @@ export default function EditEntityPage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Add application..."
+                placeholder="Add use case…"
                 value={newUseInput}
                 onChange={(e) => setNewUseInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -442,14 +442,14 @@ export default function EditEntityPage() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Source Title (e.g. Press Release)"
+                    placeholder="Source title"
                     value={src.title}
                     onChange={(e) => handleUpdateSource(idx, 'title', e.target.value)}
                     className="w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"
                   />
                   <input
                     type="url"
-                    placeholder="Source URL (e.g. https://example.com/source)"
+                    placeholder="Source URL"
                     value={src.url}
                     onChange={(e) => handleUpdateSource(idx, 'url', e.target.value)}
                     className="mono w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"
@@ -472,7 +472,7 @@ export default function EditEntityPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Updated AI tools to include Copilot"
+                  placeholder="What changed in this revision?"
                   value={editSummary}
                   onChange={(e) => setEditSummary(e.target.value)}
                   required

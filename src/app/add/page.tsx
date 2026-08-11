@@ -248,7 +248,7 @@ export default function AddEntityPage() {
                 <input
                   type="text"
                   autoFocus
-                  placeholder="e.g. Microsoft, NHS, University of Oxford"
+                  placeholder="Organisation name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -305,7 +305,7 @@ export default function AddEntityPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Music Streaming, Media"
+                    placeholder="Industry or sector"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                     required
@@ -319,7 +319,7 @@ export default function AddEntityPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Sweden, UK, United States"
+                    placeholder="Country or region"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                     required
@@ -337,7 +337,7 @@ export default function AddEntityPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   required
-                  placeholder="Explain how this organisation uses AI in production or operations..."
+                  placeholder="How does this organisation use AI?"
                   className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] p-3.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:border-[#3F4FBF] focus:outline-none"
                 />
               </div>
@@ -369,7 +369,7 @@ export default function AddEntityPage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Add application (e.g. Recommendations)..."
+                  placeholder="Add use case…"
                   value={newUseInput}
                   onChange={(e) => setNewUseInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -473,14 +473,14 @@ export default function AddEntityPage() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Source Title (e.g. Official Blog Post)"
+                      placeholder="Source title"
                       value={src.title}
                       onChange={(e) => handleUpdateSource(idx, 'title', e.target.value)}
                       className="w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"
                     />
                     <input
                       type="url"
-                      placeholder="Source URL (e.g. https://example.com/news)"
+                      placeholder="Source URL"
                       value={src.url}
                       onChange={(e) => handleUpdateSource(idx, 'url', e.target.value)}
                       className="mono w-full rounded bg-white border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] placeholder:truncate focus:outline-none"

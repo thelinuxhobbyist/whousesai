@@ -75,14 +75,25 @@ export default function HomePage() {
       <header className="pt-10 sm:pt-12 pb-8 text-left">
         <div className="max-w-[1180px] mx-auto px-6">
           {/* Left-Aligned Heading */}
-          <h1 className="serif text-4xl sm:text-6xl font-semibold leading-[1.12] max-w-[800px] mb-5 text-[#1E2A3A] tracking-tight">
-            Who uses AI, and what are they using it <span className="text-[#3F4FBF] italic font-normal">for?</span>
+          <h1 className="serif text-4xl sm:text-6xl font-semibold leading-[1.12] max-w-[800px] mb-3 text-[#1E2A3A] tracking-tight">
+            Who uses AI?
           </h1>
+          <h2 className="serif text-2xl sm:text-3xl font-medium leading-snug max-w-[800px] mb-6 text-[#1E2A3A]">
+            And what are they actually using it for?
+          </h2>
 
-          {/* Left-Aligned Lede */}
-          <p className="max-w-[640px] mb-9 text-[#5B6472] text-[16.5px] leading-relaxed">
-            Discover real-world AI adoption across companies, organisations, governments, and universities. Anyone can contribute or correct evidence — with append-only revision history.
-          </p>
+          <div className="max-w-[640px] mb-8 space-y-4 text-[#5B6472] text-[16.5px] leading-relaxed">
+            <p>
+              Discover real-world AI adoption across companies, organisations, governments, universities, and research institutions.
+            </p>
+            <p>
+              Every entry is backed by evidence. Anyone can contribute, challenge, or correct a claim — and{' '}
+              <strong className="font-semibold text-[#1E2A3A]">nothing is overwritten</strong>. Every change creates a new version, preserving the complete history of what was reported, when, and by whom.
+            </p>
+            <p className="font-semibold text-[#1E2A3A]">
+              Explore the evidence. Follow the revisions. Decide for yourself.
+            </p>
+          </div>
 
           {/* Search Box - Index Card Motif */}
           <div className="max-w-[680px]">
@@ -92,7 +103,7 @@ export default function HomePage() {
               <Search className="w-[18px] h-[18px] text-[#8A93A3]" />
               <input
                 type="text"
-                placeholder="Search companies, AI tools, industries (e.g. BBC, ChatGPT, Healthcare, Copilot)…"
+                placeholder="Search organisations or AI tools…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent border-none outline-none text-[#1E2A3A] text-[15px] placeholder:text-[#8A93A3]"
@@ -116,15 +127,21 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-6 flex-wrap">
             <div>
               <h2 className="serif text-[30px] font-semibold text-[#1E2A3A] mb-1.5">
-                Explore Directory
+                Explore AI Adoption
               </h2>
               <p className="text-[#5B6472] text-[14.5px]">
-                Filter real-world AI use by entity category or AI tools
+                Browse documented AI use by organisation, category, or AI tool.
               </p>
             </div>
 
+            <Link href="/explore" className="btn btn-outline text-[13.5px] whitespace-nowrap">
+              Explore Directory
+            </Link>
+          </div>
+
+          <div className="mb-6">
             {/* Filter Tabs */}
-            <div className="flex gap-0.5 border-b border-[#E3E5E9]">
+            <div className="flex flex-wrap gap-0.5 border-b border-[#E3E5E9]">
               <button
                 onClick={() => setSelectedType('all')}
                 className={`px-4 py-2.5 text-[13.5px] font-medium border-b-2 -mb-[1px] flex items-center gap-2 transition-all ${
@@ -145,7 +162,7 @@ export default function HomePage() {
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5 text-[#8A93A3]" />
-                Company
+                Companies
               </button>
               <button
                 onClick={() => setSelectedType('organisation')}
@@ -156,7 +173,7 @@ export default function HomePage() {
                 }`}
               >
                 <Users className="w-3.5 h-3.5 text-[#8A93A3]" />
-                Organisation
+                Organisations
               </button>
               <button
                 onClick={() => setSelectedType('government')}
@@ -216,11 +233,16 @@ export default function HomePage() {
             {/* Recently Added */}
             <div className="bg-white border border-[#E3E5E9] rounded-[8px] p-[22px_24px] shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
               <div className="flex justify-between items-center mb-[16px]">
-                <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
-                  <Clock className="w-4 h-4 text-[#3F4FBF]" />
-                  Recently Added
+                <div>
+                  <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
+                    <Clock className="w-4 h-4 text-[#3F4FBF]" />
+                    Recently Added
+                  </div>
+                  <p className="text-[12.5px] text-[#8A93A3] mt-1">
+                    The latest organisations and AI use cases documented by the community.
+                  </p>
                 </div>
-                <Link href="/explore" className="text-[12.5px] text-[#3F4FBF] hover:underline">View all</Link>
+                <Link href="/explore" className="text-[12.5px] text-[#3F4FBF] hover:underline shrink-0">View all</Link>
               </div>
 
               {recentEntities.length > 0 ? (
@@ -249,11 +271,16 @@ export default function HomePage() {
             {/* Recently Updated */}
             <div className="bg-white border border-[#E3E5E9] rounded-[8px] p-[22px_24px] shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
               <div className="flex justify-between items-center mb-[16px]">
-                <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
-                  <TrendingUp className="w-4 h-4 text-[#3F4FBF]" />
-                  Recently Updated
+                <div>
+                  <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
+                    <TrendingUp className="w-4 h-4 text-[#3F4FBF]" />
+                    Recently Updated
+                  </div>
+                  <p className="text-[12.5px] text-[#8A93A3] mt-1">
+                    See the latest additions, corrections, and competing claims.
+                  </p>
                 </div>
-                <Link href="/admin" className="text-[12.5px] text-[#3F4FBF] hover:underline">Revision log</Link>
+                <Link href="/admin" className="text-[12.5px] text-[#3F4FBF] hover:underline shrink-0">View revision history</Link>
               </div>
 
               {recentlyUpdated.length > 0 ? (
@@ -292,7 +319,11 @@ export default function HomePage() {
                 Know something we're missing?
               </h3>
               <p className="text-[#5B6472] text-[14.5px] max-w-[480px]">
-                Add or correct information. No account required. All edits are saved as new revisions, preserving complete history transparently.
+                Add an organisation, AI use case, or supporting evidence.
+              </p>
+              <p className="text-[#5B6472] text-[14.5px] max-w-[480px] mt-2">
+                No account required. Every submission becomes a new revision —{' '}
+                <strong className="font-semibold text-[#1E2A3A]">never a replacement of the existing record.</strong>
               </p>
             </div>
             <Link href="/add" className="btn btn-outline whitespace-nowrap">
