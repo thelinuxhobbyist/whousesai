@@ -201,48 +201,88 @@ export default function EntityDetailPage() {
         </section>
 
         {content.claims && content.claims.length > 0 ? (() => {
-          // Derive summary panels from claims data
-          const allUses = content.claims.map((c: Claim) => c.use);
-          const allTools = [...new Set(
-            content.claims.map((c: Claim) => c.tool).filter((t): t is string => Boolean(t))
-          )];
+          const claims = content.claims as Claim[];
+          const allUses = claims.map((c) => c.use);
+          const toolToClaims = new Map<string, number[]>();
+          claims.forEach((c, idx) => {
+            if (!c.tool) return;
+            const list = toolToClaims.get(c.tool) || [];
+            list.push(idx);
+            toolToClaims.set(c.tool, list);
+          });
+          const allTools = [...toolToClaims.keys()];
+
           return (
             <>
-              {/* Section: AI Applications & Use Cases — quick-scan grid */}
+              {/* Section: AI Applications & Use Cases — jump links into Evidence */}
               <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
                 <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
                   AI Applications & Use Cases
                 </h2>
+                <p className="text-[12.5px] text-[#8A93A3]">
+                  Jump to the evidence for any use case below.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {allUses.map((use: string, idx: number) => (
-                    <div
+                    <a
                       key={idx}
-                      className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A]"
+                      href={`#claim-${idx}`}
+                      className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors"
                     >
                       <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF] flex-shrink-0" />
-                      {use}
-                    </div>
+                      <span className="flex-1">{use}</span>
+                      <span className="text-[11px] text-[#8A93A3] font-normal shrink-0">Evidence ↓</span>
+                    </a>
                   ))}
                 </div>
               </section>
 
-              {/* Section: AI Tools & Technologies — pill list */}
+              {/* Section: AI Tools & Technologies */}
               {allTools.length > 0 && (
                 <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
                   <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
                     AI Tools & Technologies
                   </h2>
-                  <div className="flex flex-wrap gap-3">
-                    {allTools.map((tool: string, idx: number) => (
-                      <Link
-                        key={idx}
-                        href={`/explore?tool=${encodeURIComponent(tool)}`}
-                        className="mono flex items-center gap-2 px-3.5 py-1.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] font-semibold text-[13px] hover:border-[#3F4FBF] transition-all"
-                      >
-                        <span>{tool}</span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                      </Link>
-                    ))}
+                  <p className="text-[12.5px] text-[#8A93A3]">
+                    See where each tool is used on this page, or browse every organisation deploying it.
+                  </p>
+                  <div className="space-y-3">
+                    {allTools.map((tool: string) => {
+                      const claimIndexes = toolToClaims.get(tool) || [];
+                      return (
+                        <div
+                          key={tool}
+                          className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+                        >
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <Link
+                              href={`/tools#tool-${tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
+                              className="mono inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#3F4FBF] hover:underline"
+                            >
+                              {tool}
+                              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                            </Link>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-[#5B6472]">
+                              <span className="text-[#8A93A3]">Used for:</span>
+                              {claimIndexes.map((ci, i) => (
+                                <span key={ci} className="inline-flex items-center gap-2">
+                                  {i > 0 && <span className="text-[#E3E5E9]">·</span>}
+                                  <a href={`#claim-${ci}`} className="hover:text-[#3F4FBF] hover:underline">
+                                    {claims[ci].use}
+                                  </a>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <Link
+                            href={`/explore?tool=${encodeURIComponent(tool)}`}
+                            className="shrink-0 text-[12px] font-semibold text-[#3F4FBF] hover:underline"
+                          >
+                            All organisations →
+                          </Link>
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               )}
@@ -257,14 +297,18 @@ export default function EntityDetailPage() {
                   Each claim links directly to the evidence that supports it. Challenge or correct any claim by submitting a revision.
                 </p>
                 <div className="space-y-3 pt-1">
-                  {content.claims.map((claim: Claim, idx: number) => (
-                    <div key={idx} className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] overflow-hidden">
+                  {claims.map((claim: Claim, idx: number) => (
+                    <div
+                      key={idx}
+                      id={`claim-${idx}`}
+                      className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] overflow-hidden scroll-mt-24 target:ring-2 target:ring-[#3F4FBF]/40"
+                    >
                       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[#E3E5E9] bg-white">
                         <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF] flex-shrink-0" />
                         <span className="text-[14px] font-semibold text-[#1E2A3A]">{claim.use}</span>
                         {claim.tool && (
                           <Link
-                            href={`/explore?tool=${encodeURIComponent(claim.tool)}`}
+                            href={`/tools#tool-${claim.tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
                             className="mono text-[11.5px] font-semibold px-2.5 py-0.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 hover:border-[#3F4FBF] transition-colors"
                           >
                             {claim.tool}

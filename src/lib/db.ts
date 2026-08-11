@@ -359,16 +359,26 @@ export async function getEntities(params: SearchFilterParams = {}): Promise<Enti
 
   if (params.tool) {
     const toolLower = params.tool.toLowerCase();
-    result = result.filter(e =>
-      e.current_revision?.content.ai_tools.some(t => t.toLowerCase().includes(toolLower) || slugify(t) === toolLower)
-    );
+    result = result.filter((e) => {
+      const content = e.current_revision?.content;
+      if (!content) return false;
+      if (content.claims?.some((c) => c.tool && (c.tool.toLowerCase().includes(toolLower) || slugify(c.tool) === toolLower))) {
+        return true;
+      }
+      return content.ai_tools?.some((t) => t.toLowerCase().includes(toolLower) || slugify(t) === toolLower);
+    });
   }
 
   if (params.useCase) {
     const useCaseLower = params.useCase.toLowerCase();
-    result = result.filter(e =>
-      e.current_revision?.content.ai_uses.some(u => u.toLowerCase().includes(useCaseLower) || slugify(u) === useCaseLower)
-    );
+    result = result.filter((e) => {
+      const content = e.current_revision?.content;
+      if (!content) return false;
+      if (content.claims?.some((c) => c.use.toLowerCase().includes(useCaseLower) || slugify(c.use) === useCaseLower)) {
+        return true;
+      }
+      return content.ai_uses?.some((u) => u.toLowerCase().includes(useCaseLower) || slugify(u) === useCaseLower);
+    });
   }
 
   return result;
