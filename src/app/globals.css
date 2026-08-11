@@ -1,26 +1,134 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #F3F4F6;
+  --surface: #FFFFFF;
+  --surface-2: #F8F9FB;
+  --border: #E3E5E9;
+  --border-soft: #E3E5E9;
+  --text-primary: #1E2A3A;
+  --text-secondary: #5B6472;
+  --text-muted: #8A93A3;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --accent: #3F4FBF;
+  --accent-hover: #2E3B94;
+  --accent-soft: #EEEDFE;
+  --accent-soft-alt: #E6F1FB;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Kept for destructive / warning states only — not used as brand accents */
+  --danger: #B94A3C;
+  --danger-soft: rgba(185, 74, 60, 0.1);
+  --warning: #B9892E;
+  --warning-soft: rgba(185, 137, 46, 0.1);
+
+  /* Legacy aliases so older class names keep working */
+  --forest: var(--accent);
+  --forest-soft: var(--accent-soft);
+  --brass: var(--accent);
+  --brass-soft: var(--accent-soft);
+  --rust: var(--danger);
+  --rust-soft: var(--danger-soft);
+  --slate: var(--text-secondary);
+  --slate-soft: var(--accent-soft);
+
+  --shadow-sm: 0 1px 2px rgba(30, 42, 58, 0.05);
+  --shadow-md: 0 4px 16px rgba(30, 42, 58, 0.06);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  line-height: 1.5;
+}
+
+.serif {
+  font-family: var(--font-serif), 'Source Serif 4', Georgia, serif;
+}
+
+.mono {
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.btn-forest {
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+.btn-forest:hover {
+  background: var(--accent-hover);
+}
+
+.btn-outline {
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Index Card Search Motif */
+.index-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 4px;
+  padding: 18px 22px;
+  position: relative;
+  box-shadow: var(--shadow-md);
+}
+
+.index-card .hole {
+  position: absolute;
+  top: -6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.index-card .hole.l {
+  left: 24px;
+}
+
+.index-card .hole.r {
+  right: 24px;
+}
+
+/* Stat Box Motif */
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 22px 20px;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+}
+
+/* CTA Box */
+.cta-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 32px 36px;
+  box-shadow: var(--shadow-sm);
 }
