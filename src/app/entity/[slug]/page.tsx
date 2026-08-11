@@ -18,9 +18,14 @@ import {
   UserCheck,
   ArrowLeft,
   BookOpen,
-  Link2
+  FileText,
+  Tag,
 } from 'lucide-react';
 import { Claim } from '@/lib/types';
+
+function toolAnchor(tool: string) {
+  return tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
 
 export default function EntityDetailPage() {
   const params = useParams();
@@ -200,152 +205,89 @@ export default function EntityDetailPage() {
           </p>
         </section>
 
-        {content.claims && content.claims.length > 0 ? (() => {
-          const claims = content.claims as Claim[];
-          const allUses = claims.map((c) => c.use);
-          const toolToClaims = new Map<string, number[]>();
-          claims.forEach((c, idx) => {
-            if (!c.tool) return;
-            const list = toolToClaims.get(c.tool) || [];
-            list.push(idx);
-            toolToClaims.set(c.tool, list);
-          });
-          const allTools = [...toolToClaims.keys()];
+        {content.claims && content.claims.length > 0 ? (
+          <section className="space-y-4">
+            <div className="rounded-[6px] bg-white border border-[#E3E5E9] px-6 sm:px-8 py-5 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">AI Claims & Evidence</h2>
+              </div>
+              <p className="text-[12.5px] text-[#8A93A3] mt-1.5">
+                Each claim combines the use case, tool, and supporting evidence in one place. Challenge or correct any claim by submitting a revision.
+              </p>
+            </div>
 
-          return (
-            <>
-              {/* Section: AI Applications & Use Cases — jump links into Evidence */}
-              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-                  AI Applications & Use Cases
-                </h2>
-                <p className="text-[12.5px] text-[#8A93A3]">
-                  Jump to the evidence for any use case below.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {allUses.map((use: string, idx: number) => (
-                    <a
-                      key={idx}
-                      href={`#claim-${idx}`}
-                      className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors"
-                    >
-                      <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF] flex-shrink-0" />
-                      <span className="flex-1">{use}</span>
-                      <span className="text-[11px] text-[#8A93A3] font-normal shrink-0">Evidence ↓</span>
-                    </a>
-                  ))}
-                </div>
-              </section>
-
-              {/* Section: AI Tools & Technologies */}
-              {allTools.length > 0 && (
-                <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-                  <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-                    AI Tools & Technologies
-                  </h2>
-                  <p className="text-[12.5px] text-[#8A93A3]">
-                    See where each tool is used on this page, or browse every organisation deploying it.
-                  </p>
-                  <div className="space-y-3">
-                    {allTools.map((tool: string) => {
-                      const claimIndexes = toolToClaims.get(tool) || [];
-                      return (
-                        <div
-                          key={tool}
-                          className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
-                        >
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <Link
-                              href={`/tools#tool-${tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
-                              className="mono inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#3F4FBF] hover:underline"
-                            >
-                              {tool}
-                              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                            </Link>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-[#5B6472]">
-                              <span className="text-[#8A93A3]">Used for:</span>
-                              {claimIndexes.map((ci, i) => (
-                                <span key={ci} className="inline-flex items-center gap-2">
-                                  {i > 0 && <span className="text-[#E3E5E9]">·</span>}
-                                  <a href={`#claim-${ci}`} className="hover:text-[#3F4FBF] hover:underline">
-                                    {claims[ci].use}
-                                  </a>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <Link
-                            href={`/explore?tool=${encodeURIComponent(tool)}`}
-                            className="shrink-0 text-[12px] font-semibold text-[#3F4FBF] hover:underline"
-                          >
-                            All organisations →
-                          </Link>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* Section: Evidence — per-claim with inline sources */}
-              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-                <div className="border-b border-[#E3E5E9] pb-3 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
-                  <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">Evidence</h2>
-                </div>
-                <p className="text-[12.5px] text-[#8A93A3]">
-                  Each claim links directly to the evidence that supports it. Challenge or correct any claim by submitting a revision.
-                </p>
-                <div className="space-y-3 pt-1">
-                  {claims.map((claim: Claim, idx: number) => (
-                    <div
-                      key={idx}
-                      id={`claim-${idx}`}
-                      className="rounded-[6px] border border-[#E3E5E9] bg-[#F8F9FB] overflow-hidden scroll-mt-24 target:ring-2 target:ring-[#3F4FBF]/40"
-                    >
-                      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[#E3E5E9] bg-white">
-                        <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF] flex-shrink-0" />
-                        <span className="text-[14px] font-semibold text-[#1E2A3A]">{claim.use}</span>
-                        {claim.tool && (
-                          <Link
-                            href={`/tools#tool-${claim.tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
-                            className="mono text-[11.5px] font-semibold px-2.5 py-0.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 hover:border-[#3F4FBF] transition-colors"
-                          >
-                            {claim.tool}
-                          </Link>
-                        )}
-                      </div>
-                      <div className="px-4 py-3 space-y-2.5">
-                        {claim.note && (
-                          <p className="text-[13.5px] text-[#5B6472] leading-relaxed">{claim.note}</p>
-                        )}
-                        {claim.sources && claim.sources.length > 0 ? (
-                          <div className="flex flex-col gap-1.5">
-                            {claim.sources.map((src, sidx) => (
-                              <a
-                                key={sidx}
-                                href={src.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group inline-flex items-center gap-1.5 text-[12.5px] text-[#3F4FBF] hover:underline"
-                              >
-                                <Link2 className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
-                                <span className="truncate">{src.title || src.url}</span>
-                                <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50 group-hover:opacity-100" />
-                              </a>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-[12px] text-[#8A93A3] italic">No evidence attached to this claim yet.</span>
-                        )}
-                      </div>
+            <div className="space-y-4">
+              {(content.claims as Claim[]).map((claim, idx) => (
+                <article
+                  key={idx}
+                  id={`claim-${idx}`}
+                  className="rounded-[6px] bg-white border border-[#E3E5E9] shadow-[0_1px_2px_rgba(30,42,58,0.05)] overflow-hidden scroll-mt-24"
+                >
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div>
+                      <span className="text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
+                        Use Case
+                      </span>
+                      <h3 className="mt-1 text-[17px] sm:text-[18px] font-semibold text-[#1E2A3A] leading-snug">
+                        {claim.use}
+                      </h3>
                     </div>
-                  ))}
-                </div>
-              </section>
-            </>
-          );
-        })() : (
+
+                    {claim.note && (
+                      <p className="text-[14.5px] text-[#5B6472] leading-relaxed">
+                        {claim.note}
+                      </p>
+                    )}
+
+                    {claim.tool && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
+                          <Tag className="w-3 h-3" /> Tool
+                        </span>
+                        <Link
+                          href={`/tools#tool-${toolAnchor(claim.tool)}`}
+                          className="mono inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 text-[12.5px] font-semibold hover:border-[#3F4FBF] transition-colors"
+                        >
+                          {claim.tool}
+                          <ExternalLink className="w-3 h-3 opacity-70" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-[#E3E5E9] bg-[#F8F9FB] px-5 sm:px-6 py-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans shrink-0 pt-0.5">
+                        <FileText className="w-3.5 h-3.5 text-[#3F4FBF]" /> Evidence
+                      </span>
+                      {claim.sources && claim.sources.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {claim.sources.map((src, sidx) => (
+                            <a
+                              key={sidx}
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white border border-[#E3E5E9] text-[12.5px] font-medium text-[#3F4FBF] hover:border-[#3F4FBF] transition-colors"
+                            >
+                              <span className="truncate max-w-[240px]">{src.title || src.url}</span>
+                              <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[12.5px] text-[#8A93A3] italic">
+                          No evidence attached to this claim yet.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : (
           /* Legacy fallback: flat ai_uses + ai_tools + sources for old revisions */
           <>
             {content.ai_uses && content.ai_uses.length > 0 && (
