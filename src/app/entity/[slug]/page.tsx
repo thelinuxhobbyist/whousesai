@@ -121,11 +121,19 @@ export default function EntityDetailPage() {
 
         {/* Revision Header Banner */}
         <div className="rounded-[6px] bg-white border border-[#E3E5E9] border-l-4 border-l-[#3F4FBF] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[12.5px]">
-          <div className="flex items-center gap-2 text-[#1E2A3A]">
-            <span className="mono px-2 py-0.5 rounded bg-[#F8F9FB] border border-[#E3E5E9] font-semibold text-[#3F4FBF]">
-              Revision #{rev.revision_number} — Current
-            </span>
-            <span className="text-[#5B6472]">Summary: {rev.edit_summary}</span>
+          <div className="flex flex-col gap-1 text-[#1E2A3A]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono px-2 py-0.5 rounded bg-[#F8F9FB] border border-[#E3E5E9] font-semibold text-[#3F4FBF]">
+                Revision #{rev.revision_number} — Current
+              </span>
+              <span className="text-[#5B6472]">{rev.edit_summary}</span>
+            </div>
+            {rev.action_type === 'revert' && rev.revert_reason && (
+              <span className="text-[#5B6472]">
+                Reason: {rev.revert_reason}
+                {rev.revert_comment ? ` — ${rev.revert_comment}` : ''}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-4 text-[#8A93A3]">

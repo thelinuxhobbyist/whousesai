@@ -1,6 +1,34 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { Entity, EntityRevision, EntityType, RevisionContent, AITool, EntityReport, SearchFilterParams } from './types';
+import {
+  Entity,
+  EntityRevision,
+  EntityType,
+  RevisionContent,
+  AITool,
+  EntityReport,
+  SearchFilterParams,
+  RevisionActionType,
+  RevertReason
+} from './types';
 import { normalizeEntityType, shouldAutoMigrateType } from './entityTypes';
+import { buildRevertEditSummary } from './revisionLabels';
+
+export interface CreateRevisionOptions {
+  editSummary: string;
+  editorId?: string;
+  baseRevisionId?: number;
+  actionType?: RevisionActionType;
+  revertedRevisionId?: number | null;
+  restoredFromRevisionId?: number | null;
+  revertReason?: RevertReason | string | null;
+  revertComment?: string | null;
+}
+
+export interface RevertRevisionOptions {
+  editorId?: string;
+  reason?: RevertReason | string;
+  comment?: string;
+}
 
 /** Minimal async SQL interface shared by local SQLite and Cloudflare D1. */
 interface SqlDb {
@@ -11,6 +39,7 @@ interface SqlDb {
 }
 
 let localDbPromise: Promise<SqlDb> | null = null;
+let d1ReadyPromise: Promise<SqlDb> | null = null;
 
 async function getD1Binding(): Promise<D1Database | null> {
   try {
@@ -88,7 +117,14 @@ async function createLocalSqliteDb(): Promise<SqlDb> {
 async function getDb(): Promise<SqlDb> {
   const d1 = await getD1Binding();
   if (d1) {
-    return createD1Adapter(d1);
+    if (!d1ReadyPromise) {
+      d1ReadyPromise = (async () => {
+        const adapter = createD1Adapter(d1);
+        await ensureRevisionActionColumns(adapter);
+        return adapter;
+      })();
+    }
+    return d1ReadyPromise;
   }
 
   if (!localDbPromise) {
@@ -121,6 +157,11 @@ async function initTables(db: SqlDb) {
       edit_summary TEXT NOT NULL,
       editor_id TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      action_type TEXT NOT NULL DEFAULT 'edit',
+      reverted_revision_id INTEGER,
+      restored_from_revision_id INTEGER,
+      revert_reason TEXT,
+      revert_comment TEXT,
       FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
     );
 
@@ -145,11 +186,39 @@ async function initTables(db: SqlDb) {
     );
   `);
 
+  await ensureRevisionActionColumns(db);
+
   const countRow = await db.get<{ count: number }>(`SELECT COUNT(*) as count FROM entities`);
   if ((countRow?.count ?? 0) === 0) {
     await seedLocalDb(db);
   } else {
     await migrateEntityTypes(db);
+  }
+}
+
+/** Add append-only revert metadata columns on existing local/D1 databases. */
+async function ensureRevisionActionColumns(db: SqlDb) {
+  try {
+    const cols = await db.all<{ name: string }>(`PRAGMA table_info(entity_revisions)`);
+    const names = new Set(cols.map((c) => c.name));
+
+    if (!names.has('action_type')) {
+      await db.run(`ALTER TABLE entity_revisions ADD COLUMN action_type TEXT NOT NULL DEFAULT 'edit'`);
+    }
+    if (!names.has('reverted_revision_id')) {
+      await db.run(`ALTER TABLE entity_revisions ADD COLUMN reverted_revision_id INTEGER`);
+    }
+    if (!names.has('restored_from_revision_id')) {
+      await db.run(`ALTER TABLE entity_revisions ADD COLUMN restored_from_revision_id INTEGER`);
+    }
+    if (!names.has('revert_reason')) {
+      await db.run(`ALTER TABLE entity_revisions ADD COLUMN revert_reason TEXT`);
+    }
+    if (!names.has('revert_comment')) {
+      await db.run(`ALTER TABLE entity_revisions ADD COLUMN revert_comment TEXT`);
+    }
+  } catch (err) {
+    console.error('ensureRevisionActionColumns failed', err);
   }
 }
 
@@ -299,16 +368,38 @@ async function insertEntity(db: SqlDb, data: any): Promise<number> {
   return res.lastInsertRowid;
 }
 
-async function insertRevision(db: SqlDb, data: any): Promise<number> {
+async function insertRevision(db: SqlDb, data: {
+  entity_id: number;
+  revision_number: number;
+  previous_revision_id: number | null;
+  content: RevisionContent;
+  edit_summary: string;
+  editor_id: string;
+  created_at: string;
+  action_type?: RevisionActionType;
+  reverted_revision_id?: number | null;
+  restored_from_revision_id?: number | null;
+  revert_reason?: string | null;
+  revert_comment?: string | null;
+}): Promise<number> {
   const res = await db.run(
-    `INSERT INTO entity_revisions (entity_id, revision_number, previous_revision_id, content_json, edit_summary, editor_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO entity_revisions (
+      entity_id, revision_number, previous_revision_id, content_json,
+      edit_summary, editor_id, created_at,
+      action_type, reverted_revision_id, restored_from_revision_id, revert_reason, revert_comment
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     data.entity_id,
     data.revision_number,
     data.previous_revision_id,
     JSON.stringify(data.content),
     data.edit_summary,
     data.editor_id,
-    data.created_at
+    data.created_at,
+    data.action_type ?? (data.revision_number === 1 ? 'create' : 'edit'),
+    data.reverted_revision_id ?? null,
+    data.restored_from_revision_id ?? null,
+    data.revert_reason ?? null,
+    data.revert_comment ?? null
   );
   return res.lastInsertRowid;
 }
@@ -318,7 +409,8 @@ async function insertRevision(db: SqlDb, data: any): Promise<number> {
 export async function getEntities(params: SearchFilterParams = {}): Promise<Entity[]> {
   const db = await getDb();
   let query = `
-    SELECT e.*, er.content_json, er.revision_number, er.created_at as rev_created_at, er.edit_summary, er.editor_id, er.previous_revision_id
+    SELECT e.*, er.content_json, er.revision_number, er.created_at as rev_created_at, er.edit_summary, er.editor_id, er.previous_revision_id,
+           er.action_type, er.reverted_revision_id, er.restored_from_revision_id, er.revert_reason, er.revert_comment
     FROM entities e
     LEFT JOIN entity_revisions er ON e.current_revision_id = er.id
     WHERE 1=1
@@ -388,7 +480,8 @@ export async function getEntityBySlug(slug: string): Promise<Entity | null> {
   const db = await getDb();
   const row = await db.get(
     `
-    SELECT e.*, er.content_json, er.revision_number, er.created_at as rev_created_at, er.edit_summary, er.editor_id, er.previous_revision_id
+    SELECT e.*, er.content_json, er.revision_number, er.created_at as rev_created_at, er.edit_summary, er.editor_id, er.previous_revision_id,
+           er.action_type, er.reverted_revision_id, er.restored_from_revision_id, er.revert_reason, er.revert_comment
     FROM entities e
     LEFT JOIN entity_revisions er ON e.current_revision_id = er.id
     WHERE e.slug = ?
@@ -424,10 +517,30 @@ export async function getRevisionById(revisionId: number): Promise<EntityRevisio
 export async function createRevision(
   entityId: number,
   content: RevisionContent,
-  editSummary: string,
-  editorId: string = 'Anonymous Contributor',
-  baseRevisionId?: number
+  editSummaryOrOptions: string | CreateRevisionOptions,
+  editorIdArg: string = 'Anonymous Contributor',
+  baseRevisionIdArg?: number
 ): Promise<{ success: boolean; revision?: EntityRevision; conflict?: boolean; currentEntity?: Entity }> {
+  const options: CreateRevisionOptions =
+    typeof editSummaryOrOptions === 'string'
+      ? {
+          editSummary: editSummaryOrOptions,
+          editorId: editorIdArg,
+          baseRevisionId: baseRevisionIdArg
+        }
+      : editSummaryOrOptions;
+
+  const {
+    editSummary,
+    editorId = 'Anonymous Contributor',
+    baseRevisionId,
+    actionType = 'edit',
+    revertedRevisionId = null,
+    restoredFromRevisionId = null,
+    revertReason = null,
+    revertComment = null
+  } = options;
+
   const db = await getDb();
   const entityRow = await db.get<any>(`SELECT * FROM entities WHERE id = ?`, entityId);
   if (!entityRow) throw new Error('Entity not found');
@@ -453,7 +566,12 @@ export async function createRevision(
     edit_summary: editSummary || `Revision ${nextRevNumber} update`,
     editor_id: editorId,
     created_at: now,
-    content
+    content,
+    action_type: actionType,
+    reverted_revision_id: revertedRevisionId,
+    restored_from_revision_id: restoredFromRevisionId,
+    revert_reason: revertReason,
+    revert_comment: revertComment
   });
 
   await db.run(
@@ -507,7 +625,8 @@ export async function createEntity(
     edit_summary: editSummary,
     editor_id: editorId,
     created_at: now,
-    content
+    content,
+    action_type: 'create'
   });
 
   await db.run(`UPDATE entities SET current_revision_id = ? WHERE id = ?`, revId, entityId);
@@ -516,16 +635,56 @@ export async function createEntity(
   return entity;
 }
 
+/**
+ * Append-only undo of a specific revision.
+ *
+ * - `reverted_revision_id` always points at the revision being undone.
+ * - The new row's `content` is the restored/resulting state (copied from the
+ *   predecessor of the undone revision, recorded as `restored_from_revision_id`).
+ * - Nothing in existing history is mutated.
+ */
 export async function revertToRevision(
   entityId: number,
   targetRevisionId: number,
-  editorId: string = 'Anonymous Contributor'
+  options: RevertRevisionOptions | string = { reason: 'Other' }
 ): Promise<EntityRevision> {
+  const opts: RevertRevisionOptions =
+    typeof options === 'string'
+      ? { editorId: options, reason: 'Other' }
+      : options;
+
+  const editorId = opts.editorId || 'Anonymous Contributor';
+  const reason = opts.reason || 'Other';
+  const comment = opts.comment?.trim() || null;
+
   const targetRev = await getRevisionById(targetRevisionId);
   if (!targetRev) throw new Error('Target revision does not exist');
+  if (targetRev.entity_id !== entityId) {
+    throw new Error('Target revision does not belong to this entity');
+  }
+  if (!targetRev.previous_revision_id) {
+    throw new Error('Cannot revert the first revision — there is no prior state to restore');
+  }
 
-  const summary = `Reverted to Revision ${targetRev.revision_number}`;
-  const res = await createRevision(entityId, targetRev.content, summary, editorId);
+  // Restored state = content that was current before the undone revision was applied
+  const restoredRev = await getRevisionById(targetRev.previous_revision_id);
+  if (!restoredRev) {
+    throw new Error('Previous revision to restore could not be found');
+  }
+
+  const summary = buildRevertEditSummary(targetRev, restoredRev);
+
+  const res = await createRevision(entityId, restoredRev.content, {
+    editSummary: summary,
+    editorId,
+    actionType: 'revert',
+    // Always the specific revision being undone — never the restored-from revision
+    revertedRevisionId: targetRev.id,
+    restoredFromRevisionId: restoredRev.id,
+    revertReason: reason,
+    revertComment: comment
+  });
+
   if (!res.success || !res.revision) {
     throw new Error('Failed to create revert revision');
   }
@@ -626,7 +785,12 @@ function mapEntityRow(row: any): Entity {
         content,
         edit_summary: row.edit_summary || '',
         editor_id: row.editor_id || 'Anonymous Contributor',
-        created_at: row.rev_created_at || row.updated_at
+        created_at: row.rev_created_at || row.updated_at,
+        action_type: resolveActionType(row),
+        reverted_revision_id: row.reverted_revision_id ?? null,
+        restored_from_revision_id: row.restored_from_revision_id ?? null,
+        revert_reason: row.revert_reason ?? null,
+        revert_comment: row.revert_comment ?? null
       }
     : undefined;
 
@@ -643,6 +807,36 @@ function mapEntityRow(row: any): Entity {
     updated_at: row.updated_at,
     current_revision
   };
+}
+
+function resolveActionType(row: any): RevisionActionType {
+  const raw = row.action_type as RevisionActionType | null | undefined;
+  if (raw === 'create' || raw === 'edit' || raw === 'revert') {
+    // Legacy rows may still be default 'edit' for revision #1 or old revert summaries
+    if (raw === 'edit' && Number(row.revision_number) === 1) return 'create';
+    if (
+      raw === 'edit' &&
+      typeof row.edit_summary === 'string' &&
+      (/^Reverted to Revision \d+$/.test(row.edit_summary) ||
+        /^Reverted Revision #\d+$/.test(row.edit_summary) ||
+        /^Reverted #\d+/.test(row.edit_summary) ||
+        /^Undid revert/.test(row.edit_summary))
+    ) {
+      return 'revert';
+    }
+    return raw;
+  }
+  if (Number(row.revision_number) === 1) return 'create';
+  if (
+    typeof row.edit_summary === 'string' &&
+    (/^Reverted to Revision \d+$/.test(row.edit_summary) ||
+      /^Reverted Revision #\d+$/.test(row.edit_summary) ||
+      /^Reverted #\d+/.test(row.edit_summary) ||
+      /^Undid revert/.test(row.edit_summary))
+  ) {
+    return 'revert';
+  }
+  return 'edit';
 }
 
 function mapRevisionRow(row: any): EntityRevision {
@@ -674,7 +868,12 @@ function mapRevisionRow(row: any): EntityRevision {
     content,
     edit_summary: row.edit_summary,
     editor_id: row.editor_id,
-    created_at: row.created_at
+    created_at: row.created_at,
+    action_type: resolveActionType(row),
+    reverted_revision_id: row.reverted_revision_id ?? null,
+    restored_from_revision_id: row.restored_from_revision_id ?? null,
+    revert_reason: row.revert_reason ?? null,
+    revert_comment: row.revert_comment ?? null
   };
 }
 

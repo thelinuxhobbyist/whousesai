@@ -38,6 +38,25 @@ export interface RevisionContent {
   sources: SourceItem[];
 }
 
+/** How a revision was produced. Challenge flags a revision without creating one. */
+export type RevisionActionType = 'create' | 'edit' | 'revert';
+
+/** Short reasons offered when creating a revert revision. */
+export type RevertReason =
+  | 'Incorrect information'
+  | 'Unsupported claim'
+  | "Source doesn't support the claim"
+  | 'Duplicate/unnecessary change'
+  | 'Other';
+
+export const REVERT_REASONS: RevertReason[] = [
+  'Incorrect information',
+  'Unsupported claim',
+  "Source doesn't support the claim",
+  'Duplicate/unnecessary change',
+  'Other'
+];
+
 export interface EntityRevision {
   id: number;
   entity_id: number;
@@ -47,6 +66,19 @@ export interface EntityRevision {
   edit_summary: string;
   editor_id: string; // e.g. "Anonymous Contributor #4a91" or "Verified Admin"
   created_at: string;
+  /** Discriminator for create / edit / revert. Older rows default to edit (or create for #1). */
+  action_type: RevisionActionType;
+  /** When action_type is revert: the revision that was undone (not deleted). */
+  reverted_revision_id: number | null;
+  /**
+   * When action_type is revert: the revision whose content was copied into this
+   * revision as the restored state (typically the predecessor of the undone revision).
+   */
+  restored_from_revision_id: number | null;
+  /** When action_type is revert: selected short reason. */
+  revert_reason: RevertReason | string | null;
+  /** When action_type is revert: optional free-text comment. */
+  revert_comment: string | null;
 }
 
 export interface Entity {

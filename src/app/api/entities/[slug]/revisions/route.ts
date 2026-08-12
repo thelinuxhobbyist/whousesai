@@ -50,13 +50,12 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Invalid entity type' }, { status: 400 });
     }
 
-    const result = await createRevision(
-      entity.id,
-      content,
-      edit_summary || 'Updated entry details',
-      editor_id || 'Anonymous Contributor',
-      base_revision_id
-    );
+    const result = await createRevision(entity.id, content, {
+      editSummary: edit_summary || 'Updated entry details',
+      editorId: editor_id || 'Anonymous Contributor',
+      baseRevisionId: base_revision_id,
+      actionType: 'edit'
+    });
 
     if (result.conflict) {
       return NextResponse.json(
