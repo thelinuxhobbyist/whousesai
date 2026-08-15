@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EntityCard from '@/components/EntityCard';
+import EntityCard, { getCardMeta } from '@/components/EntityCard';
 import { Entity, EntityType } from '@/lib/types';
 import Link from 'next/link';
 import Fa from '@/components/Fa';
@@ -50,13 +50,15 @@ export default function HomePage() {
   const filteredEntities = entities.filter((e) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
+    const content = e.current_revision?.content;
+    const { uses, tools } = getCardMeta(content);
     return (
       e.name.toLowerCase().includes(q) ||
-      e.industry.toLowerCase().includes(q) ||
-      e.country.toLowerCase().includes(q) ||
-      e.current_revision?.content.description.toLowerCase().includes(q) ||
-      e.current_revision?.content.ai_tools.some((t) => t.toLowerCase().includes(q)) ||
-      e.current_revision?.content.ai_uses.some((u) => u.toLowerCase().includes(q))
+      e.industry?.toLowerCase().includes(q) ||
+      e.country?.toLowerCase().includes(q) ||
+      content?.description?.toLowerCase().includes(q) ||
+      tools.some((t) => t.toLowerCase().includes(q)) ||
+      uses.some((u) => u.toLowerCase().includes(q))
     );
   });
 

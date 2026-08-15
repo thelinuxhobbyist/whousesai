@@ -10,6 +10,8 @@ interface ReportModalProps {
   entityId: number | string;
   revisionId: number | string;
   entityName: string;
+  /** When true, copy presents Challenge (flag without changing state). */
+  mode?: 'report' | 'challenge';
 }
 
 export default function ReportModal({
@@ -17,7 +19,8 @@ export default function ReportModal({
   onClose,
   entityId,
   revisionId,
-  entityName
+  entityName,
+  mode = 'report'
 }: ReportModalProps) {
   const [reason, setReason] = useState('Inaccurate information');
   const [details, setDetails] = useState('');
@@ -26,6 +29,8 @@ export default function ReportModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const isChallenge = mode === 'challenge';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,9 +77,13 @@ export default function ReportModal({
             <div className="w-12 h-12 rounded-full bg-[#EEEDFE] text-[#3F4FBF] flex items-center justify-center mx-auto border border-[#3F4FBF]/25">
               <Fa icon={faFlag} className="w-6 h-6" />
             </div>
-            <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">Report Submitted</h3>
+            <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
+              {isChallenge ? 'Challenge Submitted' : 'Report Submitted'}
+            </h3>
             <p className="text-[13.5px] text-[#5B6472]">
-              Thank you for helping keep WhoUsesAI accurate. Moderation reviews all flagged entries.
+              {isChallenge
+                ? 'This revision was flagged for review. The current entry was not changed.'
+                : 'Thank you for helping keep WhoUsesAI accurate. Moderation reviews all flagged entries.'}
             </p>
             <button onClick={onClose} className="btn btn-forest text-xs mt-4">
               Close Window
@@ -85,9 +94,16 @@ export default function ReportModal({
             <div className="flex items-center gap-2 text-[#A85238]">
               <Fa icon={faFlag} className="w-5 h-5" />
               <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
-                Report Entry: {entityName}
+                {isChallenge ? 'Challenge Revision' : 'Report Entry'}: {entityName}
               </h3>
             </div>
+
+            {isChallenge && (
+              <p className="text-[12.5px] text-[#5B6472] rounded bg-[#F8F9FB] border border-[#E3E5E9] p-2.5">
+                Challenge flags this revision for review. It does not change the current state — use
+                Edit or Revert if you want to create a new revision.
+              </p>
+            )}
 
             {errorMessage && (
               <div className="text-xs text-[#A85238] bg-[#A85238]/10 border border-[#A85238]/30 p-2.5 rounded">
@@ -97,7 +113,7 @@ export default function ReportModal({
 
             <div>
               <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1 font-sans">
-                Reason for report:
+                Reason for {isChallenge ? 'challenge' : 'report'}:
               </label>
               <select
                 value={reason}
@@ -121,7 +137,11 @@ export default function ReportModal({
                 onChange={(e) => setDetails(e.target.value)}
                 rows={3}
                 required
-                placeholder="Explain why this revision should be corrected or reviewed..."
+                placeholder={
+                  isChallenge
+                    ? 'Explain why this revision should be reviewed…'
+                    : 'Explain why this revision should be corrected or reviewed...'
+                }
                 className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] p-3 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
               />
             </div>
@@ -140,7 +160,13 @@ export default function ReportModal({
                 className="btn btn-forest text-xs font-semibold disabled:opacity-50"
               >
                 <Fa icon={faPaperPlane} className="w-3.5 h-3.5" />
-                <span>{submitting ? 'Submitting...' : 'Submit Report'}</span>
+                <span>
+                  {submitting
+                    ? 'Submitting...'
+                    : isChallenge
+                      ? 'Submit Challenge'
+                      : 'Submit Report'}
+                </span>
               </button>
             </div>
           </form>

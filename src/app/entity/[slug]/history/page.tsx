@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RevisionDiffViewer from '@/components/RevisionDiffViewer';
+import RevertModal from '@/components/RevertModal';
+import ReportModal from '@/components/ReportModal';
 import { Entity, EntityRevision } from '@/lib/types';
+import { revisionHistoryLabel } from '@/lib/revisionLabels';
 import Link from 'next/link';
 import Fa from '@/components/Fa';
 import {
@@ -15,6 +18,9 @@ import {
   faCalendar,
   faUserCheck,
   faCircleCheck,
+  faPenToSquare,
+  faFlag,
+  faEye,
 } from '@fortawesome/free-solid-svg-icons';
 
 export default function EntityHistoryPage() {
@@ -25,13 +31,14 @@ export default function EntityHistoryPage() {
   const [revisions, setRevisions] = useState<EntityRevision[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Compare diff selections
   const [selectedRevA, setSelectedRevA] = useState<EntityRevision | null>(null);
   const [selectedRevB, setSelectedRevB] = useState<EntityRevision | null>(null);
 
-  // Revert action state
-  const [revertingId, setRevertingId] = useState<number | null>(null);
+  const [revertTarget, setRevertTarget] = useState<EntityRevision | null>(null);
+  const [challengeTarget, setChallengeTarget] = useState<EntityRevision | null>(null);
   const [revertMessage, setRevertMessage] = useState<string | null>(null);
+
+  const revisionRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
     if (slug) {
@@ -50,10 +57,11 @@ export default function EntityHistoryPage() {
         setRevisions(revs);
 
         if (revs.length >= 2) {
-          setSelectedRevA(revs[1]); // Previous revision
-          setSelectedRevB(revs[0]); // Current revision
+          setSelectedRevA(revs[1]);
+          setSelectedRevB(revs[0]);
         } else if (revs.length === 1) {
           setSelectedRevB(revs[0]);
+          setSelectedRevA(null);
         }
       }
     } catch (err) {
@@ -63,37 +71,33 @@ export default function EntityHistoryPage() {
     }
   };
 
-  const handleRevert = async (revisionId: number, revisionNumber: number) => {
-    if (!confirm(`Are you sure you want to revert to Revision #${revisionNumber}? This will create a new Revision #${(revisions[0]?.revision_number || 1) + 1}.`)) {
-      return;
-    }
+  const revisionById = (id: number | null | undefined) =>
+    id == null ? undefined : revisions.find((r) => r.id === id);
 
-    setRevertingId(revisionId);
-    setRevertMessage(null);
-
-    try {
-      const res = await fetch(`/api/entities/${slug}/revert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target_revision_id: revisionId,
-          editor_id: 'Moderator / Community Revert'
-        })
-      });
-
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to revert revision');
-      }
-
-      setRevertMessage(`Successfully created Revision #${data.revision.revision_number} reverting back to Revision #${revisionNumber}.`);
-      await fetchHistory();
-    } catch (err: any) {
-      setRevertMessage(err.message || 'Error executing revert action.');
-    } finally {
-      setRevertingId(null);
+  const scrollToRevision = (revisionId: number) => {
+    const el = revisionRefs.current[revisionId];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-[#3F4FBF]');
+      window.setTimeout(() => el.classList.remove('ring-2', 'ring-[#3F4FBF]'), 1600);
     }
   };
+
+  const openCompare = (rev: EntityRevision, index: number) => {
+    setSelectedRevB(rev);
+    if (index < revisions.length - 1) {
+      setSelectedRevA(revisions[index + 1]);
+    } else {
+      setSelectedRevA(null);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const restoredForTarget = (target: EntityRevision) =>
+    revisionById(target.previous_revision_id);
+
+  const optionLabel = (r: EntityRevision) =>
+    `Rev #${r.revision_number} — ${revisionHistoryLabel(r, revisionById)} (${new Date(r.created_at).toLocaleDateString()})`;
 
   if (loading) {
     return (
@@ -114,12 +118,17 @@ export default function EntityHistoryPage() {
         <Navbar />
         <div className="max-w-xl mx-auto px-6 py-24 text-center space-y-4">
           <h2 className="serif text-2xl font-semibold">Entity Not Found</h2>
-          <Link href="/" className="btn btn-forest text-sm">Return to Directory</Link>
+          <Link href="/" className="btn btn-forest text-sm">
+            Return to Directory
+          </Link>
         </div>
         <Footer />
       </div>
     );
   }
+
+  const nextRevisionNumber = (revisions[0]?.revision_number || 0) + 1;
+  const revertRestored = revertTarget ? restoredForTarget(revertTarget) : null;
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#1E2A3A] flex flex-col font-sans">
@@ -139,7 +148,8 @@ export default function EntityHistoryPage() {
             Revision History: {entity.name}
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
-            Every edit is stored in an append-only ledger. You can inspect exact word-by-word diffs or revert to any previous revision.
+            Past changes stay visible. You can edit, revert a change, or challenge a claim —
+            each action is recorded as a new revision.
           </p>
         </div>
 
@@ -150,18 +160,16 @@ export default function EntityHistoryPage() {
           </div>
         )}
 
-        {/* Diff Comparison Section */}
         {selectedRevB && (
           <div className="rounded-[6px] bg-white border border-[#E3E5E9] p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)] space-y-6">
             <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-              Revision Comparison
+              Compare revisions
             </h2>
 
-            {/* Select revision dropdowns */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1 font-sans">
-                  Base Revision (Older):
+                  Older revision
                 </label>
                 <select
                   value={selectedRevA?.id || ''}
@@ -171,10 +179,10 @@ export default function EntityHistoryPage() {
                   }}
                   className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-2 text-xs text-[#1E2A3A] focus:outline-none"
                 >
-                  <option value="">None (Show full revision)</option>
+                  <option value="">None (show full revision)</option>
                   {revisions.map((r) => (
                     <option key={r.id} value={r.id}>
-                      Rev #{r.revision_number} — {r.edit_summary} ({new Date(r.created_at).toLocaleDateString()})
+                      {optionLabel(r)}
                     </option>
                   ))}
                 </select>
@@ -182,7 +190,7 @@ export default function EntityHistoryPage() {
 
               <div>
                 <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1 font-sans">
-                  Target Revision (Newer):
+                  Newer revision
                 </label>
                 <select
                   value={selectedRevB?.id || ''}
@@ -194,42 +202,57 @@ export default function EntityHistoryPage() {
                 >
                   {revisions.map((r) => (
                     <option key={r.id} value={r.id}>
-                      Rev #{r.revision_number} — {r.edit_summary} ({new Date(r.created_at).toLocaleDateString()})
+                      {optionLabel(r)}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Visual Word-by-Word Diff component */}
             <RevisionDiffViewer oldRevision={selectedRevA} newRevision={selectedRevB} />
           </div>
         )}
 
-        {/* Timeline Log of All Revisions */}
         <div className="space-y-4">
           <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">
-            Timeline Ledger ({revisions.length} Revisions)
+            All revisions ({revisions.length})
           </h2>
 
           <div className="space-y-4">
             {revisions.map((rev, index) => {
               const isCurrent = index === 0;
+              const isRevert = rev.action_type === 'revert';
+              const reverted = revisionById(rev.reverted_revision_id);
+              const restoredFrom =
+                revisionById(rev.restored_from_revision_id) ||
+                (reverted ? revisionById(reverted.previous_revision_id) : undefined);
+              const canRevert = Boolean(rev.previous_revision_id);
+              const undoingARevert = isRevert;
+              const undoneWasRevert = reverted?.action_type === 'revert';
+
               return (
                 <div
                   key={rev.id}
+                  id={`rev-${rev.revision_number}`}
+                  ref={(el) => {
+                    revisionRefs.current[rev.id] = el;
+                  }}
                   className={`rounded-[6px] bg-white border p-5 transition-all shadow-[0_1px_2px_rgba(30,42,58,0.05)] ${
-                    isCurrent ? 'border-[#3F4FBF] border-l-4' : 'border-[#E3E5E9]'
+                    isCurrent
+                      ? 'border-[#3F4FBF] border-l-4'
+                      : isRevert
+                        ? 'border-[#A85238]/40 border-l-4 border-l-[#A85238]'
+                        : 'border-[#E3E5E9]'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="mono text-[12px] font-bold text-[#3F4FBF] bg-[#F8F9FB] border border-[#E3E5E9] px-2.5 py-1 rounded">
-                        Rev #{rev.revision_number}
+                        #{rev.revision_number}
                       </span>
                       {isCurrent && (
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3F4FBF] bg-[#EEEDFE] border border-[#3F4FBF]/25 px-2 py-0.5 rounded-full font-sans">
-                          Current Active
+                          Current
                         </span>
                       )}
                     </div>
@@ -246,35 +269,89 @@ export default function EntityHistoryPage() {
                     </div>
                   </div>
 
-                  <p className="text-[14px] text-[#1E2A3A] font-medium mb-3">
-                    Summary: <span className="font-normal text-[#5B6472]">{rev.edit_summary}</span>
-                  </p>
+                  {isRevert ? (
+                    <div className="space-y-2 mb-3 text-[14px]">
+                      <p className="text-[#1E2A3A] font-medium leading-relaxed">
+                        {undoneWasRevert ? 'Undid revert ' : 'Reverted '}
+                        {reverted ? (
+                          <button
+                            type="button"
+                            onClick={() => scrollToRevision(reverted.id)}
+                            className="text-[#A85238] hover:underline font-semibold"
+                          >
+                            #{reverted.revision_number}
+                          </button>
+                        ) : (
+                          <span>a prior revision</span>
+                        )}
+                        {restoredFrom ? (
+                          <>
+                            {' '}
+                            → restored state from{' '}
+                            <button
+                              type="button"
+                              onClick={() => scrollToRevision(restoredFrom.id)}
+                              className="text-[#3F4FBF] hover:underline font-semibold"
+                            >
+                              #{restoredFrom.revision_number}
+                            </button>
+                          </>
+                        ) : null}
+                      </p>
+                      {rev.revert_reason && (
+                        <p className="text-[13px] text-[#5B6472]">
+                          <span className="font-medium text-[#1E2A3A]">Reason:</span> {rev.revert_reason}
+                        </p>
+                      )}
+                      {rev.revert_comment && (
+                        <p className="text-[13px] text-[#5B6472]">
+                          <span className="font-medium text-[#1E2A3A]">Comment:</span> {rev.revert_comment}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[14px] text-[#5B6472] mb-3">{rev.edit_summary}</p>
+                  )}
 
-                  <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[#E3E5E9] text-xs">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3 border-t border-[#E3E5E9] text-xs">
                     <button
-                      onClick={() => {
-                        setSelectedRevB(rev);
-                        if (index < revisions.length - 1) {
-                          setSelectedRevA(revisions[index + 1]);
-                        } else {
-                          setSelectedRevA(null);
-                        }
-                      }}
-                      className="text-[#3F4FBF] hover:underline font-semibold"
+                      type="button"
+                      onClick={() => openCompare(rev, index)}
+                      className="inline-flex items-center gap-1 text-[#3F4FBF] hover:underline font-semibold"
                     >
-                      Compare against previous
+                      <Fa icon={faEye} className="w-3.5 h-3.5" />
+                      View
                     </button>
-
-                    {!isCurrent && (
-                      <button
-                        onClick={() => handleRevert(rev.id, rev.revision_number)}
-                        disabled={revertingId === rev.id}
-                        className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-[#A85238] hover:underline disabled:opacity-50"
-                      >
-                        <Fa icon={faRotateLeft} className="w-3.5 h-3.5" />
-                        <span>{revertingId === rev.id ? 'Reverting...' : `Revert to Rev #${rev.revision_number}`}</span>
-                      </button>
+                    <span className="text-[#E3E5E9]">·</span>
+                    <Link
+                      href={`/entity/${slug}/edit`}
+                      className="inline-flex items-center gap-1 text-[#3F4FBF] hover:underline font-semibold"
+                    >
+                      <Fa icon={faPenToSquare} className="w-3.5 h-3.5" />
+                      Edit
+                    </Link>
+                    {canRevert && (
+                      <>
+                        <span className="text-[#E3E5E9]">·</span>
+                        <button
+                          type="button"
+                          onClick={() => setRevertTarget(rev)}
+                          className="inline-flex items-center gap-1 text-[#A85238] hover:underline font-semibold"
+                        >
+                          <Fa icon={faRotateLeft} className="w-3.5 h-3.5" />
+                          {undoingARevert ? 'Undo this revert' : 'Revert this revision'}
+                        </button>
+                      </>
                     )}
+                    <span className="text-[#E3E5E9]">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setChallengeTarget(rev)}
+                      className="inline-flex items-center gap-1 text-[#8A93A3] hover:text-[#A85238] hover:underline font-semibold"
+                    >
+                      <Fa icon={faFlag} className="w-3.5 h-3.5" />
+                      Challenge
+                    </button>
                   </div>
                 </div>
               );
@@ -284,6 +361,35 @@ export default function EntityHistoryPage() {
       </main>
 
       <Footer />
+
+      {revertTarget && revertRestored && (
+        <RevertModal
+          isOpen={Boolean(revertTarget)}
+          onClose={() => setRevertTarget(null)}
+          slug={slug}
+          targetRevision={revertTarget}
+          restoredRevision={revertRestored}
+          nextRevisionNumber={nextRevisionNumber}
+          onSuccess={(newRev) => {
+            setRevertMessage(
+              `Saved as revision #${newRev.revision_number}. Earlier revisions are still in the history.`
+            );
+            setRevertTarget(null);
+            fetchHistory();
+          }}
+        />
+      )}
+
+      {challengeTarget && entity && (
+        <ReportModal
+          isOpen={Boolean(challengeTarget)}
+          onClose={() => setChallengeTarget(null)}
+          entityId={entity.id}
+          revisionId={challengeTarget.id}
+          entityName={`${entity.name} (#${challengeTarget.revision_number})`}
+          mode="challenge"
+        />
+      )}
     </div>
   );
 }

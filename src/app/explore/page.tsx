@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EntityCard from '@/components/EntityCard';
+import EntityCard, { getCardMeta } from '@/components/EntityCard';
 import { Entity } from '@/lib/types';
 import { getEntityTypeLabel } from '@/lib/entityTypes';
 import Link from 'next/link';
@@ -55,16 +55,18 @@ function ExploreContent() {
   // Derive unique lists for dropdown filters
   const allCountries = Array.from(new Set(entities.map((e) => e.country).filter(Boolean))).sort();
   const allTools = Array.from(
-    new Set(entities.flatMap((e) => e.current_revision?.content.ai_tools || []))
+    new Set(entities.flatMap((e) => getCardMeta(e.current_revision?.content).tools))
   ).sort();
 
   // Apply Client Filters
   const filteredEntities = entities.filter((entity) => {
+    const { uses, tools } = getCardMeta(entity.current_revision?.content);
+
     if (selectedType !== 'all' && entity.type !== selectedType) return false;
     if (
       selectedTool &&
       selectedTool !== 'all' &&
-      !entity.current_revision?.content.ai_tools.includes(selectedTool)
+      !tools.includes(selectedTool)
     ) {
       return false;
     }
@@ -74,10 +76,10 @@ function ExploreContent() {
       const q = query.toLowerCase();
       const content = entity.current_revision?.content;
       const matchesName = entity.name.toLowerCase().includes(q);
-      const matchesIndustry = entity.industry.toLowerCase().includes(q);
-      const matchesDesc = content?.description.toLowerCase().includes(q);
-      const matchesUse = content?.ai_uses.some((u) => u.toLowerCase().includes(q));
-      const matchesTool = content?.ai_tools.some((t) => t.toLowerCase().includes(q));
+      const matchesIndustry = entity.industry?.toLowerCase().includes(q);
+      const matchesDesc = content?.description?.toLowerCase().includes(q);
+      const matchesUse = uses.some((u) => u.toLowerCase().includes(q));
+      const matchesTool = tools.some((t) => t.toLowerCase().includes(q));
 
       if (!matchesName && !matchesIndustry && !matchesDesc && !matchesUse && !matchesTool) {
         return false;

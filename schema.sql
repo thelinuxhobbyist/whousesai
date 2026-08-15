@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS entity_revisions (
   edit_summary TEXT NOT NULL,
   editor_id TEXT NOT NULL,
   created_at TEXT NOT NULL,
+  -- Append-only action metadata (create / edit / revert). Existing rows stay immutable.
+  action_type TEXT NOT NULL DEFAULT 'edit',
+  reverted_revision_id INTEGER,
+  restored_from_revision_id INTEGER,
+  revert_reason TEXT,
+  revert_comment TEXT,
   FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
 );
 

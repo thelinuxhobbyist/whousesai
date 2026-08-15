@@ -44,7 +44,7 @@ export function getTypeBadge(type: string): { label: string; icon: IconDefinitio
 }
 
 /** Prefer claims; fall back to legacy flat arrays for older revisions. */
-function getCardMeta(content?: RevisionContent) {
+export function getCardMeta(content?: RevisionContent) {
   if (!content) {
     return { uses: [] as string[], tools: [] as string[], sourceCount: 0 };
   }
