@@ -8,7 +8,8 @@ import EntityCard from '@/components/EntityCard';
 import { Entity } from '@/lib/types';
 import { getEntityTypeLabel } from '@/lib/entityTypes';
 import Link from 'next/link';
-import { Search, Filter, Plus, BookOpen } from 'lucide-react';
+import Fa from '@/components/Fa';
+import { faBookOpen, faFilter, faMagnifyingGlass, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -89,33 +90,27 @@ function ExploreContent() {
   return (
     <main className="max-w-[1180px] mx-auto px-6 py-10 space-y-8 w-full flex-grow">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E3E5E9] pb-6">
-        <div className="space-y-1">
-          <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <BookOpen className="w-8 h-8 text-[#3F4FBF]" />
-            Explore AI Adoption
-          </h1>
-          <p className="text-[14.5px] text-[#5B6472]">
-            Browse documented AI use by organisation, category, or AI tool.
-          </p>
-        </div>
-
-        <Link href="/add" className="btn btn-forest text-sm self-start md:self-auto">
-          <Plus className="w-4 h-4" /> Add Entity
-        </Link>
+      <div className="border-b border-[#E3E5E9] pb-6 space-y-1">
+        <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
+          <Fa icon={faBookOpen} className="w-8 h-8 text-[#3F4FBF]" />
+          Explore AI Adoption
+        </h1>
+        <p className="text-[14.5px] text-[#5B6472]">
+          Browse documented AI use by organisation, category, or AI tool.
+        </p>
       </div>
 
       {/* Filter Controls Bar */}
       <div className="rounded-[6px] bg-white border border-[#E3E5E9] p-5 space-y-4 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
         <div className="flex items-center gap-2 text-xs font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
-          <Filter className="w-3.5 h-3.5 text-[#3F4FBF]" />
+          <Fa icon={faFilter} className="w-3.5 h-3.5 text-[#3F4FBF]" />
           <span>Search &amp; Filter Options</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-[#8A93A3]" />
+            <Fa icon={faMagnifyingGlass} className="w-4 h-4 absolute left-3 top-3 text-[#8A93A3]" />
             <input
               type="text"
               placeholder="Search by name or keyword…"
@@ -233,13 +228,13 @@ function ExploreContent() {
           </div>
         ) : (
           <div className="border border-dashed border-[#E3E5E9] rounded-[8px] p-16 text-center bg-white">
-            <Search className="w-8 h-8 text-[#8A93A3] mx-auto mb-3" />
+            <Fa icon={faMagnifyingGlass} className="w-8 h-8 text-[#8A93A3] mx-auto mb-3" />
             <h3 className="serif text-[18px] font-semibold text-[#1E2A3A]">No entries match your filters</h3>
             <p className="text-[13.5px] text-[#5B6472] mt-1 mb-6">
               Try adjusting your search criteria or contribute this entry yourself.
             </p>
             <Link href="/add" className="btn btn-forest">
-              <Plus className="w-4 h-4" /> Add New Entry
+              <Fa icon={faPlus} className="w-4 h-4" /> Add New Entry
             </Link>
           </div>
         )}

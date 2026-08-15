@@ -4,7 +4,16 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { ShieldCheck, History, Flag, ExternalLink, Calendar, UserCheck, CheckCircle, Clock } from 'lucide-react';
+import Fa from '@/components/Fa';
+import {
+  faShieldHalved,
+  faClockRotateLeft,
+  faFlag,
+  faArrowUpRightFromSquare,
+  faCalendar,
+  faUserCheck,
+  faCircleCheck,
+} from '@fortawesome/free-solid-svg-icons';
 import { getEntityTypeLabel } from '@/lib/entityTypes';
 
 interface AuditItem {
@@ -82,7 +91,7 @@ export default function AdminPage() {
         {/* Header */}
         <div className="space-y-2 border-b border-[#E3E5E9] pb-6">
           <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-[#3F4FBF]" />
+            <Fa icon={faShieldHalved} className="w-8 h-8 text-[#3F4FBF]" />
             Moderation &amp; Audit Stream
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
@@ -100,7 +109,7 @@ export default function AdminPage() {
                 : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
             }`}
           >
-            <History className="w-4 h-4 text-[#3F4FBF]" />
+            <Fa icon={faClockRotateLeft} className="w-4 h-4 text-[#3F4FBF]" />
             Recent Revisions Stream ({audits.length})
           </button>
 
@@ -112,7 +121,7 @@ export default function AdminPage() {
                 : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
             }`}
           >
-            <Flag className="w-4 h-4 text-[#A85238]" />
+            <Fa icon={faFlag} className="w-4 h-4 text-[#A85238]" />
             Reported Content Flags ({reports.length})
           </button>
         </div>
@@ -150,11 +159,11 @@ export default function AdminPage() {
                 <div className="flex flex-col sm:items-end gap-2 text-xs text-[#8A93A3]">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
+                      <Fa icon={faCalendar} className="w-3.5 h-3.5" />
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
                     <span className="flex items-center gap-1">
-                      <UserCheck className="w-3.5 h-3.5" />
+                      <Fa icon={faUserCheck} className="w-3.5 h-3.5" />
                       {item.editor_id}
                     </span>
                   </div>
@@ -164,7 +173,7 @@ export default function AdminPage() {
                       href={`/entity/${item.entity_slug}/history`}
                       className="px-3 py-1 rounded bg-[#F8F9FB] hover:bg-[#E3E5E9] text-[12px] font-semibold text-[#3F4FBF] border border-[#E3E5E9] flex items-center gap-1 transition-colors"
                     >
-                      History <ExternalLink className="w-3 h-3" />
+                      History <Fa icon={faArrowUpRightFromSquare} className="w-3 h-3" />
                     </Link>
                   </div>
                 </div>
@@ -207,7 +216,7 @@ export default function AdminPage() {
               ))
             ) : (
               <div className="border border-dashed border-[#E3E5E9] rounded-[8px] p-16 text-center bg-white">
-                <CheckCircle className="w-8 h-8 text-[#3F4FBF] mx-auto mb-3" />
+                <Fa icon={faCircleCheck} className="w-8 h-8 text-[#3F4FBF] mx-auto mb-3" />
                 <h3 className="serif text-[18px] font-semibold text-[#1E2A3A]">No content flags submitted</h3>
                 <p className="text-[13.5px] text-[#5B6472] mt-1">
                   Community content flags will be logged here for moderation review.

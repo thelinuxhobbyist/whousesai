@@ -6,17 +6,18 @@ import Footer from '@/components/Footer';
 import EntityCard from '@/components/EntityCard';
 import { Entity, EntityType } from '@/lib/types';
 import Link from 'next/link';
+import Fa from '@/components/Fa';
 import {
-  Search,
-  Users,
-  Building2,
-  Landmark,
-  GraduationCap,
-  Plus,
-  Clock,
-  TrendingUp,
-  LayoutGrid
-} from 'lucide-react';
+  faMagnifyingGlass,
+  faUsers,
+  faBuilding,
+  faLandmark,
+  faGraduationCap,
+  faPlus,
+  faClock,
+  faArrowTrendUp,
+  faTableCellsLarge,
+} from '@fortawesome/free-solid-svg-icons';
 
 export default function HomePage() {
   const [entities, setEntities] = useState<Entity[]>([]);
@@ -100,7 +101,7 @@ export default function HomePage() {
             <div className="index-card flex items-center gap-3.5">
               <span className="hole l" />
               <span className="hole r" />
-              <Search className="w-[18px] h-[18px] text-[#8A93A3]" />
+              <Fa icon={faMagnifyingGlass} className="w-[18px] h-[18px] text-[#8A93A3]" />
               <input
                 type="text"
                 placeholder="Search organisations or AI tools…"
@@ -150,7 +151,7 @@ export default function HomePage() {
                     : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
                 }`}
               >
-                <LayoutGrid className="w-3.5 h-3.5 text-[#8A93A3]" />
+                <Fa icon={faTableCellsLarge} className="w-3.5 h-3.5 text-[#8A93A3]" />
                 All
               </button>
               <button
@@ -161,7 +162,7 @@ export default function HomePage() {
                     : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
                 }`}
               >
-                <Building2 className="w-3.5 h-3.5 text-[#8A93A3]" />
+                <Fa icon={faBuilding} className="w-3.5 h-3.5 text-[#8A93A3]" />
                 Companies
               </button>
               <button
@@ -172,7 +173,7 @@ export default function HomePage() {
                     : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
                 }`}
               >
-                <Users className="w-3.5 h-3.5 text-[#8A93A3]" />
+                <Fa icon={faUsers} className="w-3.5 h-3.5 text-[#8A93A3]" />
                 Organisations
               </button>
               <button
@@ -183,7 +184,7 @@ export default function HomePage() {
                     : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
                 }`}
               >
-                <Landmark className="w-3.5 h-3.5 text-[#8A93A3]" />
+                <Fa icon={faLandmark} className="w-3.5 h-3.5 text-[#8A93A3]" />
                 Government
               </button>
               <button
@@ -194,7 +195,7 @@ export default function HomePage() {
                     : 'text-[#5B6472] border-b-transparent hover:text-[#1E2A3A]'
                 }`}
               >
-                <GraduationCap className="w-3.5 h-3.5 text-[#8A93A3]" />
+                <Fa icon={faGraduationCap} className="w-3.5 h-3.5 text-[#8A93A3]" />
                 University &amp; Research
               </button>
             </div>
@@ -216,14 +217,14 @@ export default function HomePage() {
           ) : (
             <div className="border border-dashed border-[#E3E5E9] rounded-[8px] p-16 text-center bg-white">
               <div className="w-[52px] h-[52px] rounded-full bg-[#F8F9FB] border border-[#E3E5E9] flex items-center justify-center mx-auto mb-5 text-[#8A93A3]">
-                <Search className="w-5 h-5" />
+                <Fa icon={faMagnifyingGlass} className="w-5 h-5" />
               </div>
               <h3 className="serif text-[19px] font-semibold text-[#1E2A3A] mb-2">No matching entities found</h3>
               <p className="text-[#5B6472] text-[14px] mb-6 max-w-sm mx-auto">
                 No entries match your search query "{searchQuery}". You can be the first to document it.
               </p>
               <Link href="/add" className="btn btn-forest">
-                <Plus className="w-4 h-4" /> Add New Entry
+                <Fa icon={faPlus} className="w-4 h-4" /> Add New Entry
               </Link>
             </div>
           )}
@@ -235,7 +236,7 @@ export default function HomePage() {
               <div className="flex justify-between items-center mb-[16px]">
                 <div>
                   <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
-                    <Clock className="w-4 h-4 text-[#3F4FBF]" />
+                    <Fa icon={faClock} className="w-4 h-4 text-[#3F4FBF]" />
                     Recently Added
                   </div>
                   <p className="text-[12.5px] text-[#8A93A3] mt-1">
@@ -273,7 +274,7 @@ export default function HomePage() {
               <div className="flex justify-between items-center mb-[16px]">
                 <div>
                   <div className="flex items-center gap-2.5 serif text-[17px] font-semibold text-[#1E2A3A]">
-                    <TrendingUp className="w-4 h-4 text-[#3F4FBF]" />
+                    <Fa icon={faArrowTrendUp} className="w-4 h-4 text-[#3F4FBF]" />
                     Recently Updated
                   </div>
                   <p className="text-[12.5px] text-[#8A93A3] mt-1">
@@ -327,7 +328,7 @@ export default function HomePage() {
               </p>
             </div>
             <Link href="/add" className="btn btn-outline whitespace-nowrap">
-              <Plus className="w-4 h-4 text-[#3F4FBF]" />
+              <Fa icon={faPlus} className="w-4 h-4 text-[#3F4FBF]" />
               <span>Add an Entry</span>
             </Link>
           </div>

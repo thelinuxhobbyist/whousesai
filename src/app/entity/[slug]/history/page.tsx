@@ -7,7 +7,15 @@ import Footer from '@/components/Footer';
 import RevisionDiffViewer from '@/components/RevisionDiffViewer';
 import { Entity, EntityRevision } from '@/lib/types';
 import Link from 'next/link';
-import { History, ArrowLeft, RotateCcw, Calendar, UserCheck, CheckCircle2 } from 'lucide-react';
+import Fa from '@/components/Fa';
+import {
+  faClockRotateLeft,
+  faArrowLeft,
+  faRotateLeft,
+  faCalendar,
+  faUserCheck,
+  faCircleCheck,
+} from '@fortawesome/free-solid-svg-icons';
 
 export default function EntityHistoryPage() {
   const params = useParams();
@@ -122,12 +130,12 @@ export default function EntityHistoryPage() {
           href={`/entity/${slug}`}
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Entry Page
+          <Fa icon={faArrowLeft} className="w-4 h-4" /> Back to Entry Page
         </Link>
 
         <div className="space-y-2">
           <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <History className="w-8 h-8 text-[#3F4FBF]" />
+            <Fa icon={faClockRotateLeft} className="w-8 h-8 text-[#3F4FBF]" />
             Revision History: {entity.name}
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
@@ -137,7 +145,7 @@ export default function EntityHistoryPage() {
 
         {revertMessage && (
           <div className="rounded-[6px] bg-[#EEEDFE] border border-[#3F4FBF]/25 p-4 text-[13.5px] text-[#3F4FBF] flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <Fa icon={faCircleCheck} className="w-5 h-5 flex-shrink-0" />
             <span>{revertMessage}</span>
           </div>
         )}
@@ -228,11 +236,11 @@ export default function EntityHistoryPage() {
 
                     <div className="flex items-center gap-4 text-[12px] text-[#8A93A3]">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-[#8A93A3]" />
+                        <Fa icon={faCalendar} className="w-3.5 h-3.5 text-[#8A93A3]" />
                         {new Date(rev.created_at).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5 text-[#8A93A3]" />
+                        <Fa icon={faUserCheck} className="w-3.5 h-3.5 text-[#8A93A3]" />
                         {rev.editor_id}
                       </span>
                     </div>
@@ -263,7 +271,7 @@ export default function EntityHistoryPage() {
                         disabled={revertingId === rev.id}
                         className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-[#A85238] hover:underline disabled:opacity-50"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        <Fa icon={faRotateLeft} className="w-3.5 h-3.5" />
                         <span>{revertingId === rev.id ? 'Reverting...' : `Revert to Rev #${rev.revision_number}`}</span>
                       </button>
                     )}

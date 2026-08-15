@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { Layers, ArrowRight, ExternalLink } from 'lucide-react';
+import Fa from '@/components/Fa';
+import { faLayerGroup, faArrowRight, faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 
 interface ToolGroup {
   tool: string;
@@ -48,7 +49,7 @@ export default function ToolsIndexPage() {
       <main className="max-w-[1180px] mx-auto px-6 py-10 space-y-8 w-full flex-grow">
         <div className="space-y-2 border-b border-[#E3E5E9] pb-6">
           <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <Layers className="w-8 h-8 text-[#3F4FBF]" />
+            <Fa icon={faLayerGroup} className="w-8 h-8 text-[#3F4FBF]" />
             AI Tools Index
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
@@ -84,7 +85,7 @@ export default function ToolsIndexPage() {
                     href={`/explore?tool=${encodeURIComponent(item.tool)}`}
                     className="text-[12px] font-semibold text-[#3F4FBF] hover:underline flex items-center gap-1 shrink-0"
                   >
-                    Filter Directory <ArrowRight className="w-3.5 h-3.5" />
+                    Filter Directory <Fa icon={faArrowRight} className="w-3.5 h-3.5" />
                   </Link>
                 </div>
 
@@ -96,7 +97,7 @@ export default function ToolsIndexPage() {
                         className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[#1E2A3A] hover:text-[#3F4FBF] transition-colors"
                       >
                         <span>{e.name}</span>
-                        <ExternalLink className="w-3 h-3 text-[#8A93A3]" />
+                        <Fa icon={faArrowUpRightFromSquare} className="w-3 h-3 text-[#8A93A3]" />
                       </Link>
                       {e.uses && e.uses.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pl-0.5">
@@ -118,7 +119,7 @@ export default function ToolsIndexPage() {
           </div>
         ) : (
           <div className="border border-dashed border-[#E3E5E9] rounded-[8px] p-16 text-center bg-white">
-            <Layers className="w-8 h-8 text-[#8A93A3] mx-auto mb-3" />
+            <Fa icon={faLayerGroup} className="w-8 h-8 text-[#8A93A3] mx-auto mb-3" />
             <h3 className="serif text-[18px] font-semibold text-[#1E2A3A]">No AI tools indexed yet</h3>
             <p className="text-[13.5px] text-[#5B6472] mt-1">
               Add new entity entries to index the AI tools they deploy.

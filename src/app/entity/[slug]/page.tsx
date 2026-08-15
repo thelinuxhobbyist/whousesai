@@ -8,19 +8,20 @@ import ReportModal from '@/components/ReportModal';
 import { getTypeBadge } from '@/components/EntityCard';
 import { Entity } from '@/lib/types';
 import Link from 'next/link';
+import Fa from '@/components/Fa';
 import {
-  Edit3,
-  History,
-  Flag,
-  ExternalLink,
-  Share2,
-  Calendar,
-  UserCheck,
-  ArrowLeft,
-  BookOpen,
-  FileText,
-  Tag,
-} from 'lucide-react';
+  faPenToSquare,
+  faClockRotateLeft,
+  faFlag,
+  faArrowUpRightFromSquare,
+  faShareNodes,
+  faCalendar,
+  faUserCheck,
+  faArrowLeft,
+  faBookOpen,
+  faFileLines,
+  faTag,
+} from '@fortawesome/free-solid-svg-icons';
 import { Claim } from '@/lib/types';
 
 function toolAnchor(tool: string) {
@@ -93,7 +94,7 @@ export default function EntityDetailPage() {
             href="/"
             className="btn btn-forest text-sm"
           >
-            <ArrowLeft className="w-4 h-4" /> Return to Directory
+            <Fa icon={faArrowLeft} className="w-4 h-4" /> Return to Directory
           </Link>
         </div>
         <Footer />
@@ -104,7 +105,6 @@ export default function EntityDetailPage() {
   const rev = entity.current_revision;
   const content = rev.content;
   const typeInfo = getTypeBadge(entity.type);
-  const TypeIcon = typeInfo.icon;
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#1E2A3A] flex flex-col font-sans">
@@ -116,7 +116,7 @@ export default function EntityDetailPage() {
           href="/"
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Directory
+          <Fa icon={faArrowLeft} className="w-4 h-4" /> Back to Directory
         </Link>
 
         {/* Revision Header Banner */}
@@ -130,11 +130,11 @@ export default function EntityDetailPage() {
 
           <div className="flex items-center gap-4 text-[#8A93A3]">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
+              <Fa icon={faCalendar} className="w-3.5 h-3.5" />
               {new Date(rev.created_at).toLocaleDateString()}
             </span>
             <span className="flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5" />
+              <Fa icon={faUserCheck} className="w-3.5 h-3.5" />
               {rev.editor_id}
             </span>
           </div>
@@ -144,7 +144,7 @@ export default function EntityDetailPage() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold border ${typeInfo.color}`}>
-              <TypeIcon className="w-4 h-4" />
+              <Fa icon={typeInfo.icon} className="w-4 h-4" />
               {typeInfo.label}
             </span>
             <span className="text-[12px] text-[#5B6472] font-medium px-3 py-1 rounded-full bg-white border border-[#E3E5E9]">
@@ -166,7 +166,7 @@ export default function EntityDetailPage() {
             href={`/entity/${slug}/edit`}
             className="btn btn-forest text-sm"
           >
-            <Edit3 className="w-4 h-4" />
+            <Fa icon={faPenToSquare} className="w-4 h-4" />
             <span>[ Edit Entry ]</span>
           </Link>
 
@@ -174,7 +174,7 @@ export default function EntityDetailPage() {
             href={`/entity/${slug}/history`}
             className="btn btn-outline text-sm"
           >
-            <History className="w-4 h-4 text-[#3F4FBF]" />
+            <Fa icon={faClockRotateLeft} className="w-4 h-4 text-[#3F4FBF]" />
             <span>[ View History ]</span>
           </Link>
 
@@ -182,7 +182,7 @@ export default function EntityDetailPage() {
             onClick={handleShare}
             className="btn btn-outline text-sm"
           >
-            <Share2 className="w-4 h-4 text-[#3F4FBF]" />
+            <Fa icon={faShareNodes} className="w-4 h-4 text-[#3F4FBF]" />
             <span>{copied ? 'Copied Link!' : 'Share'}</span>
           </button>
 
@@ -190,7 +190,7 @@ export default function EntityDetailPage() {
             onClick={() => setReportModalOpen(true)}
             className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-[#8A93A3] hover:text-[#A85238] px-3 py-2 rounded transition-colors"
           >
-            <Flag className="w-3.5 h-3.5" />
+            <Fa icon={faFlag} className="w-3.5 h-3.5" />
             <span>Report Revision</span>
           </button>
         </div>
@@ -209,7 +209,7 @@ export default function EntityDetailPage() {
           <section className="space-y-4">
             <div className="rounded-[6px] bg-white border border-[#E3E5E9] px-6 sm:px-8 py-5 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+                <Fa icon={faBookOpen} className="w-5 h-5 text-[#3F4FBF]" />
                 <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">AI Claims & Evidence</h2>
               </div>
               <p className="text-[12.5px] text-[#8A93A3] mt-1.5">
@@ -243,14 +243,14 @@ export default function EntityDetailPage() {
                     {claim.tool && (
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
-                          <Tag className="w-3 h-3" /> Tool
+                          <Fa icon={faTag} className="w-3 h-3" /> Tool
                         </span>
                         <Link
                           href={`/tools#tool-${toolAnchor(claim.tool)}`}
                           className="mono inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 text-[12.5px] font-semibold hover:border-[#3F4FBF] transition-colors"
                         >
                           {claim.tool}
-                          <ExternalLink className="w-3 h-3 opacity-70" />
+                          <Fa icon={faArrowUpRightFromSquare} className="w-3 h-3 opacity-70" />
                         </Link>
                       </div>
                     )}
@@ -259,7 +259,7 @@ export default function EntityDetailPage() {
                   <div className="border-t border-[#E3E5E9] bg-[#F8F9FB] px-5 sm:px-6 py-3.5">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans shrink-0 pt-0.5">
-                        <FileText className="w-3.5 h-3.5 text-[#3F4FBF]" /> Evidence
+                        <Fa icon={faFileLines} className="w-3.5 h-3.5 text-[#3F4FBF]" /> Evidence
                       </span>
                       {claim.sources && claim.sources.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
@@ -272,7 +272,7 @@ export default function EntityDetailPage() {
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white border border-[#E3E5E9] text-[12.5px] font-medium text-[#3F4FBF] hover:border-[#3F4FBF] transition-colors"
                             >
                               <span className="truncate max-w-[240px]">{src.title || src.url}</span>
-                              <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                              <Fa icon={faArrowUpRightFromSquare} className="w-3 h-3 shrink-0 opacity-70" />
                             </a>
                           ))}
                         </div>
@@ -315,7 +315,7 @@ export default function EntityDetailPage() {
                     <Link key={idx} href={`/explore?tool=${encodeURIComponent(tool)}`}
                       className="mono flex items-center gap-2 px-3.5 py-1.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] font-semibold text-[13px] hover:border-[#3F4FBF] transition-all">
                       <span>{tool}</span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      <Fa icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5 opacity-70" />
                     </Link>
                   ))}
                 </div>
@@ -323,7 +323,7 @@ export default function EntityDetailPage() {
             )}
             <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
               <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
-                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+                <Fa icon={faBookOpen} className="w-5 h-5 text-[#3F4FBF]" />
                 Sources & Evidence
               </h2>
               {content.sources && content.sources.length > 0 ? (
@@ -335,7 +335,7 @@ export default function EntityDetailPage() {
                         <span className="text-[14px] font-semibold text-[#1E2A3A] group-hover:text-[#3F4FBF] transition-colors block truncate">{src.title || src.url}</span>
                         <span className="mono text-[11.5px] text-[#8A93A3] block truncate">{src.url}</span>
                       </div>
-                      <ExternalLink className="w-4 h-4 text-[#8A93A3] group-hover:text-[#3F4FBF] flex-shrink-0" />
+                      <Fa icon={faArrowUpRightFromSquare} className="w-4 h-4 text-[#8A93A3] group-hover:text-[#3F4FBF] flex-shrink-0" />
                     </a>
                   ))}
                 </div>
