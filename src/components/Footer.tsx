@@ -2,8 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Fa from '@/components/Fa';
-import { faIdCard, faCodeBranch, faGlobe, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
+import {
+  CheckCheck,
+  GitBranch,
+  Globe,
+  IdCard,
+} from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -14,7 +18,7 @@ export default function Footer() {
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-[#F8F9FB] border border-[#E3E5E9] flex items-center justify-center text-[#3F4FBF]">
-                <Fa icon={faIdCard} className="w-4 h-4 text-[#3F4FBF]" />
+                <IdCard className="w-4 h-4 text-[#3F4FBF]" />
               </div>
               <span className="serif font-semibold text-[18px] text-[#1E2A3A]">
                 WhoUses<span className="text-[#3F4FBF]">AI</span>.com
@@ -34,15 +38,15 @@ export default function Footer() {
             </p>
             <div className="flex flex-wrap gap-3 text-[12px] text-[#8A93A3] pt-1">
               <span className="flex items-center gap-1.5">
-                <Fa icon={faCheckDouble} className="w-3 h-3 text-[#3F4FBF]" />
+                <CheckCheck className="w-3 h-3 text-[#3F4FBF]" />
                 Evidence-Based
               </span>
               <span className="flex items-center gap-1.5">
-                <Fa icon={faCodeBranch} className="w-3 h-3 text-[#3F4FBF]" />
+                <GitBranch className="w-3 h-3 text-[#3F4FBF]" />
                 Append-Only
               </span>
               <span className="flex items-center gap-1.5">
-                <Fa icon={faGlobe} className="w-3 h-3 text-[#3F4FBF]" />
+                <Globe className="w-3 h-3 text-[#3F4FBF]" />
                 Open Access
               </span>
             </div>

@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Fa from '@/components/Fa';
-import { faRotateLeft, faXmark, faCircleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { EntityRevision, REVERT_REASONS, RevertReason, RevisionContent } from '@/lib/types';
+import {
+  AlertCircle,
+  RotateCcw,
+  X,
+} from 'lucide-react';
 
 interface RevertModalProps {
   isOpen: boolean;
@@ -100,11 +103,11 @@ export default function RevertModal({
           className="absolute right-4 top-4 text-[#8A93A3] hover:text-[#1E2A3A]"
           aria-label="Close"
         >
-          <Fa icon={faXmark} className="w-5 h-5" />
+          <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-2 pr-8">
-          <Fa icon={faRotateLeft} className="w-5 h-5 text-[#A85238]" />
+          <RotateCcw className="w-5 h-5 text-[#A85238]" />
           <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
             {undoingARevert
               ? `Undo revert #${targetRevision.revision_number}`
@@ -114,7 +117,7 @@ export default function RevertModal({
 
         <div className="rounded-[6px] bg-[#F8F9FB] border border-[#E3E5E9] p-3.5 space-y-2 text-[13px] text-[#5B6472]">
           <p className="flex items-start gap-2 text-[#1E2A3A]">
-            <Fa icon={faCircleExclamation} className="w-4 h-4 mt-0.5 text-[#A85238] flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 mt-0.5 text-[#A85238] flex-shrink-0" />
             <span>
               This creates a <strong>new</strong> revision #{nextRevisionNumber}. The old one stays
               in the history — nothing is deleted.
@@ -220,7 +223,7 @@ export default function RevertModal({
               disabled={submitting || (undoingARevert && !acknowledged)}
               className="btn btn-forest text-xs font-semibold disabled:opacity-50"
             >
-              <Fa icon={faRotateLeft} className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span>{submitting ? 'Saving…' : `Save as revision #${nextRevisionNumber}`}</span>
             </button>
           </div>

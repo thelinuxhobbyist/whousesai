@@ -3,8 +3,11 @@
 import React from 'react';
 import { EntityRevision } from '@/lib/types';
 import { diffWords } from 'diff';
-import Fa from '@/components/Fa';
-import { faCodeCompare, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+  GitCompare,
+  Minus,
+  Plus,
+} from 'lucide-react';
 
 interface RevisionDiffViewerProps {
   oldRevision: EntityRevision | null;
@@ -28,7 +31,7 @@ export default function RevisionDiffViewer({
       {/* Header comparing revision metadata */}
       <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-xs gap-3">
         <div className="flex items-center gap-2">
-          <Fa icon={faCodeCompare} className="w-4 h-4 text-[#3F4FBF]" />
+          <GitCompare className="w-4 h-4 text-[#3F4FBF]" />
           <span className="font-semibold text-[#1E2A3A]">
             Comparing Rev #{oldRevision?.revision_number || 0} &rarr; Rev #{newRevision.revision_number}
           </span>
@@ -36,10 +39,10 @@ export default function RevisionDiffViewer({
 
         <div className="flex items-center gap-4 text-[#8A93A3]">
           <span className="flex items-center gap-1">
-            <Fa icon={faMinus} className="w-3 h-3 text-[#A85238]" /> Removals
+            <Minus className="w-3 h-3 text-[#A85238]" /> Removals
           </span>
           <span className="flex items-center gap-1">
-            <Fa icon={faPlus} className="w-3 h-3 text-[#3F4FBF]" /> Additions
+            <Plus className="w-3 h-3 text-[#3F4FBF]" /> Additions
           </span>
         </div>
       </div>

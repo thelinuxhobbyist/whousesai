@@ -7,15 +7,14 @@ import Footer from '@/components/Footer';
 import { Entity, EntityType, RevisionContent, SourceItem, Claim } from '@/lib/types';
 import { normalizeEntityType } from '@/lib/entityTypes';
 import Link from 'next/link';
-import Fa from '@/components/Fa';
 import {
-  faPlus,
-  faTrash,
-  faArrowLeft,
-  faFloppyDisk,
-  faTriangleExclamation,
-  faRotate,
-} from '@fortawesome/free-solid-svg-icons';
+  AlertTriangle,
+  ArrowLeft,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+} from 'lucide-react';
 
 export default function EditEntityPage() {
   const params = useParams();
@@ -230,7 +229,7 @@ export default function EditEntityPage() {
           href={`/entity/${slug}`}
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
         >
-          <Fa icon={faArrowLeft} className="w-4 h-4" /> Cancel & Return to Entry
+          <ArrowLeft className="w-4 h-4" /> Cancel & Return to Entry
         </Link>
 
         <div className="space-y-2">
@@ -351,7 +350,7 @@ export default function EditEntityPage() {
                 onClick={addClaim}
                 className="flex items-center gap-1 text-xs font-semibold text-[#3F4FBF] hover:underline shrink-0"
               >
-                <Fa icon={faPlus} className="w-4 h-4" /> Add Claim
+                <Plus className="w-4 h-4" /> Add Claim
               </button>
             </div>
 
@@ -425,7 +424,7 @@ export default function EditEntityPage() {
                             />
                           </div>
                           <button type="button" onClick={() => removeClaimSource(ci, si)} className="mt-1.5 text-[#A85238] hover:text-[#8B3220]">
-                            <Fa icon={faTrash} className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ))}
@@ -440,7 +439,7 @@ export default function EditEntityPage() {
               onClick={addClaim}
               className="w-full py-2.5 rounded border border-dashed border-[#E3E5E9] text-[13px] text-[#8A93A3] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors flex items-center justify-center gap-2"
             >
-              <Fa icon={faPlus} className="w-4 h-4" /> Add another claim
+              <Plus className="w-4 h-4" /> Add another claim
             </button>
           </div>
 
@@ -492,7 +491,7 @@ export default function EditEntityPage() {
               disabled={saving}
               className="btn btn-forest text-base px-6 py-3 font-semibold disabled:opacity-50"
             >
-              <Fa icon={faFloppyDisk} className="w-5 h-5" />
+              <Save className="w-5 h-5" />
               <span>{saving ? 'Saving Revision...' : 'Save Revision'}</span>
             </button>
           </div>
@@ -506,7 +505,7 @@ export default function EditEntityPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="max-w-md w-full rounded-[8px] bg-white border border-[#E3E5E9] p-6 space-y-5 shadow-2xl">
             <div className="flex items-center gap-3 text-[#A85238]">
-              <Fa icon={faTriangleExclamation} className="w-6 h-6 flex-shrink-0" />
+              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
               <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
                 Concurrent Edit Conflict
               </h3>
@@ -526,7 +525,7 @@ export default function EditEntityPage() {
                 onClick={() => fetchEntity()}
                 className="btn btn-outline flex-1 text-xs justify-center"
               >
-                <Fa icon={faRotate} className="w-4 h-4 text-[#3F4FBF]" />
+                <RefreshCw className="w-4 h-4 text-[#3F4FBF]" />
                 <span>Reload Latest Version</span>
               </button>
 
@@ -534,7 +533,7 @@ export default function EditEntityPage() {
                 onClick={(e) => handleSubmit(e as any, true)}
                 className="btn btn-forest flex-1 text-xs justify-center"
               >
-                <Fa icon={faFloppyDisk} className="w-4 h-4" />
+                <Save className="w-4 h-4" />
                 <span>Force Save New Revision</span>
               </button>
             </div>

@@ -4,42 +4,41 @@ import React from 'react';
 import Link from 'next/link';
 import { Entity, Claim, RevisionContent } from '@/lib/types';
 import { getEntityTypeLabel } from '@/lib/entityTypes';
-import Fa from '@/components/Fa';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import type { LucideIcon } from 'lucide-react';
 import {
-  faBuilding,
-  faUsers,
-  faLandmark,
-  faGraduationCap,
-  faLayerGroup,
-  faClockRotateLeft,
-  faArrowRight,
-  faCircleQuestion,
-  faFileLines,
-} from '@fortawesome/free-solid-svg-icons';
+  ArrowRight,
+  Building2,
+  FileText,
+  GraduationCap,
+  HelpCircle,
+  History,
+  Landmark,
+  Layers,
+  Users,
+} from 'lucide-react';
 
 interface EntityCardProps {
   entity: Entity;
 }
 
-export function getTypeBadge(type: string): { label: string; icon: IconDefinition; color: string } {
+export function getTypeBadge(type: string): { label: string; icon: LucideIcon; color: string } {
   switch (type) {
     case 'company':
-      return { label: 'Company', icon: faBuilding, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
+      return { label: 'Company', icon: Building2, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
     case 'organisation':
     case 'non-profit':
-      return { label: 'Organisation', icon: faUsers, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
+      return { label: 'Organisation', icon: Users, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
     case 'government':
-      return { label: 'Government', icon: faLandmark, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
+      return { label: 'Government', icon: Landmark, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
     case 'university_research':
     case 'university':
-      return { label: 'University & Research', icon: faGraduationCap, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
+      return { label: 'University & Research', icon: GraduationCap, color: 'bg-[#EEEDFE] text-[#3F4FBF] border-[#3F4FBF]/25' };
     case 'other':
-      return { label: 'Other', icon: faCircleQuestion, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
+      return { label: 'Other', icon: HelpCircle, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
     case 'person':
-      return { label: 'Person', icon: faUsers, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
+      return { label: 'Person', icon: Users, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
     default:
-      return { label: getEntityTypeLabel(type), icon: faBuilding, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
+      return { label: getEntityTypeLabel(type), icon: Building2, color: 'bg-[#F8F9FB] text-[#5B6472] border-[#E3E5E9]' };
   }
 }
 
@@ -71,6 +70,7 @@ export default function EntityCard({ entity }: EntityCardProps) {
   const rev = entity.current_revision;
   const content = rev?.content;
   const typeInfo = getTypeBadge(entity.type);
+  const TypeIcon = typeInfo.icon;
   const { uses, tools, sourceCount } = getCardMeta(content);
 
   const visibleTools = tools.slice(0, 4);
@@ -83,12 +83,12 @@ export default function EntityCard({ entity }: EntityCardProps) {
       {/* Top: category + revision */}
       <div className="flex items-start justify-between gap-4 mb-3">
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${typeInfo.color}`}>
-          <Fa icon={typeInfo.icon} className="w-3.5 h-3.5" />
+          <TypeIcon className="w-3.5 h-3.5" />
           {typeInfo.label}
         </span>
         {rev && (
           <span className="flex items-center gap-1 text-[11px] mono text-[#3F4FBF] bg-[#F8F9FB] border border-[#E3E5E9] px-2 py-0.5 rounded">
-            <Fa icon={faClockRotateLeft} className="w-3 h-3" /> Rev #{rev.revision_number}
+            <History className="w-3 h-3" /> Rev #{rev.revision_number}
           </span>
         )}
       </div>
@@ -97,7 +97,7 @@ export default function EntityCard({ entity }: EntityCardProps) {
       <Link href={`/entity/${entity.slug}`} className="block group-hover:text-[#3F4FBF] transition-colors">
         <h3 className="serif text-[20px] font-semibold text-[#1E2A3A] leading-tight flex items-center justify-between gap-2">
           <span>{entity.name}</span>
-          <Fa icon={faArrowRight} className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#3F4FBF] shrink-0" />
+          <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#3F4FBF] shrink-0" />
         </h3>
       </Link>
 
@@ -112,7 +112,7 @@ export default function EntityCard({ entity }: EntityCardProps) {
       {visibleTools.length > 0 && (
         <div className="mt-4">
           <span className="text-[11px] font-semibold text-[#3F4FBF] uppercase tracking-wider mb-1.5 flex items-center gap-1 font-sans">
-            <Fa icon={faLayerGroup} className="w-3 h-3" /> AI Tools
+            <Layers className="w-3 h-3" /> AI Tools
           </span>
           <div className="flex flex-wrap gap-1.5">
             {visibleTools.map((tool) => (
@@ -159,7 +159,7 @@ export default function EntityCard({ entity }: EntityCardProps) {
       {/* Footer */}
       <div className="mt-auto pt-4 mt-6 border-t border-[#E3E5E9] flex items-center justify-between text-[12.5px] text-[#8A93A3]">
         <span className="inline-flex items-center gap-1.5 font-medium text-[#5B6472]">
-          <Fa icon={faFileLines} className="w-3.5 h-3.5 text-[#3F4FBF]" />
+          <FileText className="w-3.5 h-3.5 text-[#3F4FBF]" />
           {sourceCount} {sourceCount === 1 ? 'Source' : 'Sources'}
         </span>
         <div className="flex items-center gap-2">

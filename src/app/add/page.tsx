@@ -7,29 +7,28 @@ import Footer from '@/components/Footer';
 import { EntityType, RevisionContent, Claim } from '@/lib/types';
 import { ENTITY_TYPE_OPTIONS, getEntityTypeLabel } from '@/lib/entityTypes';
 import Link from 'next/link';
-import Fa from '@/components/Fa';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import type { LucideIcon } from 'lucide-react';
 import {
-  faCirclePlus,
-  faPlus,
-  faTrash,
-  faArrowLeft,
-  faFloppyDisk,
-  faBuilding,
-  faUsers,
-  faLandmark,
-  faGraduationCap,
-  faCircleQuestion,
-} from '@fortawesome/free-solid-svg-icons';
+  ArrowLeft,
+  Building2,
+  GraduationCap,
+  HelpCircle,
+  Landmark,
+  Plus,
+  PlusCircle,
+  Save,
+  Trash2,
+  Users,
+} from 'lucide-react';
 
 type Step = 'type' | 'name' | 'details';
 
-const TYPE_ICONS: Record<EntityType, IconDefinition> = {
-  company: faBuilding,
-  organisation: faUsers,
-  government: faLandmark,
-  university_research: faGraduationCap,
-  other: faCircleQuestion,
+const TYPE_ICONS: Record<EntityType, LucideIcon> = {
+  company: Building2,
+  organisation: Users,
+  government: Landmark,
+  university_research: GraduationCap,
+  other: HelpCircle,
 };
 
 export default function AddEntityPage() {
@@ -158,12 +157,12 @@ export default function AddEntityPage() {
           href="/"
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
         >
-          <Fa icon={faArrowLeft} className="w-4 h-4" /> Cancel & Return Home
+          <ArrowLeft className="w-4 h-4" /> Cancel & Return Home
         </Link>
 
         <div className="space-y-2">
           <h1 className="serif text-2xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <Fa icon={faCirclePlus} className="w-7 h-7 sm:w-8 sm:h-8 text-[#3F4FBF]" />
+            <PlusCircle className="w-7 h-7 sm:w-8 sm:h-8 text-[#3F4FBF]" />
             Add New Entry to WhoUsesAI
           </h1>
           <p className="text-[13.5px] sm:text-[14.5px] text-[#5B6472]">
@@ -191,7 +190,7 @@ export default function AddEntityPage() {
 
             <div className="space-y-2.5">
               {ENTITY_TYPE_OPTIONS.map((option) => {
-                const icon = TYPE_ICONS[option.value];
+                const Icon = TYPE_ICONS[option.value];
                 return (
                   <button
                     key={option.value}
@@ -201,7 +200,7 @@ export default function AddEntityPage() {
                   >
                     <div className="flex items-start gap-3.5">
                       <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] group-hover:border-[#3F4FBF]/30">
-                        <Fa icon={icon} className="w-[18px] h-[18px]" />
+                        <Icon className="w-[18px] h-[18px]" />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="text-[15.5px] font-semibold text-[#1E2A3A]">{option.label}</div>
@@ -230,7 +229,7 @@ export default function AddEntityPage() {
               onClick={() => setStep('type')}
               className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
             >
-              <Fa icon={faArrowLeft} className="w-4 h-4" /> Change type
+              <ArrowLeft className="w-4 h-4" /> Change type
             </button>
 
             <div>
@@ -282,7 +281,7 @@ export default function AddEntityPage() {
               onClick={() => setStep('name')}
               className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
             >
-              <Fa icon={faArrowLeft} className="w-4 h-4" /> Change name
+              <ArrowLeft className="w-4 h-4" /> Change name
             </button>
 
             <div className="rounded-[6px] bg-white border border-[#E3E5E9] px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
@@ -356,7 +355,7 @@ export default function AddEntityPage() {
                   <p className="text-[12px] text-[#8A93A3] mt-0.5">Each claim gets its own use case, optional tool, and directly attached evidence.</p>
                 </div>
                 <button type="button" onClick={addClaim} className="flex items-center gap-1 text-xs font-semibold text-[#3F4FBF] hover:underline shrink-0">
-                  <Fa icon={faPlus} className="w-4 h-4" /> Add Claim
+                  <Plus className="w-4 h-4" /> Add Claim
                 </button>
               </div>
 
@@ -426,7 +425,7 @@ export default function AddEntityPage() {
                               />
                             </div>
                             <button type="button" onClick={() => removeClaimSource(ci, si)} className="mt-1.5 text-[#A85238] hover:text-[#8B3220]">
-                              <Fa icon={faTrash} className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ))}
@@ -441,7 +440,7 @@ export default function AddEntityPage() {
                 onClick={addClaim}
                 className="w-full py-2.5 rounded border border-dashed border-[#E3E5E9] text-[13px] text-[#8A93A3] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors flex items-center justify-center gap-2"
               >
-                <Fa icon={faPlus} className="w-4 h-4" /> Add another claim
+                <Plus className="w-4 h-4" /> Add another claim
               </button>
             </div>
 
@@ -459,7 +458,7 @@ export default function AddEntityPage() {
                 disabled={saving}
                 className="btn btn-forest text-base px-6 py-3 font-semibold disabled:opacity-50"
               >
-                <Fa icon={faFloppyDisk} className="w-5 h-5" />
+                <Save className="w-5 h-5" />
                 <span>{saving ? 'Creating Entry...' : 'Publish Entry'}</span>
               </button>
             </div>

@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import Fa from '@/components/Fa';
-import { faFlag, faXmark, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
+import {
+  Flag,
+  Send,
+  X,
+} from 'lucide-react';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -69,13 +72,13 @@ export default function ReportModal({
           onClick={onClose}
           className="absolute right-4 top-4 text-[#8A93A3] hover:text-[#1E2A3A]"
         >
-          <Fa icon={faXmark} className="w-5 h-5" />
+          <X className="w-5 h-5" />
         </button>
 
         {submitted ? (
           <div className="text-center py-6 space-y-3">
             <div className="w-12 h-12 rounded-full bg-[#EEEDFE] text-[#3F4FBF] flex items-center justify-center mx-auto border border-[#3F4FBF]/25">
-              <Fa icon={faFlag} className="w-6 h-6" />
+              <Flag className="w-6 h-6" />
             </div>
             <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
               {isChallenge ? 'Challenge Submitted' : 'Report Submitted'}
@@ -92,7 +95,7 @@ export default function ReportModal({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex items-center gap-2 text-[#A85238]">
-              <Fa icon={faFlag} className="w-5 h-5" />
+              <Flag className="w-5 h-5" />
               <h3 className="serif text-[20px] font-semibold text-[#1E2A3A]">
                 {isChallenge ? 'Challenge Revision' : 'Report Entry'}: {entityName}
               </h3>
@@ -159,7 +162,7 @@ export default function ReportModal({
                 disabled={submitting}
                 className="btn btn-forest text-xs font-semibold disabled:opacity-50"
               >
-                <Fa icon={faPaperPlane} className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5" />
                 <span>
                   {submitting
                     ? 'Submitting...'

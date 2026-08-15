@@ -10,18 +10,17 @@ import ReportModal from '@/components/ReportModal';
 import { Entity, EntityRevision } from '@/lib/types';
 import { revisionHistoryLabel } from '@/lib/revisionLabels';
 import Link from 'next/link';
-import Fa from '@/components/Fa';
 import {
-  faClockRotateLeft,
-  faArrowLeft,
-  faRotateLeft,
-  faCalendar,
-  faUserCheck,
-  faCircleCheck,
-  faPenToSquare,
-  faFlag,
-  faEye,
-} from '@fortawesome/free-solid-svg-icons';
+  ArrowLeft,
+  Calendar,
+  CheckCircle2,
+  Edit3,
+  Eye,
+  Flag,
+  History,
+  RotateCcw,
+  UserCheck,
+} from 'lucide-react';
 
 export default function EntityHistoryPage() {
   const params = useParams();
@@ -139,12 +138,12 @@ export default function EntityHistoryPage() {
           href={`/entity/${slug}`}
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
         >
-          <Fa icon={faArrowLeft} className="w-4 h-4" /> Back to Entry Page
+          <ArrowLeft className="w-4 h-4" /> Back to Entry Page
         </Link>
 
         <div className="space-y-2">
           <h1 className="serif text-3xl sm:text-4xl font-semibold text-[#1E2A3A] tracking-tight flex items-center gap-3">
-            <Fa icon={faClockRotateLeft} className="w-8 h-8 text-[#3F4FBF]" />
+            <History className="w-8 h-8 text-[#3F4FBF]" />
             Revision History: {entity.name}
           </h1>
           <p className="text-[14.5px] text-[#5B6472]">
@@ -155,7 +154,7 @@ export default function EntityHistoryPage() {
 
         {revertMessage && (
           <div className="rounded-[6px] bg-[#EEEDFE] border border-[#3F4FBF]/25 p-4 text-[13.5px] text-[#3F4FBF] flex items-center gap-2">
-            <Fa icon={faCircleCheck} className="w-5 h-5 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span>{revertMessage}</span>
           </div>
         )}
@@ -259,11 +258,11 @@ export default function EntityHistoryPage() {
 
                     <div className="flex items-center gap-4 text-[12px] text-[#8A93A3]">
                       <span className="flex items-center gap-1">
-                        <Fa icon={faCalendar} className="w-3.5 h-3.5 text-[#8A93A3]" />
+                        <Calendar className="w-3.5 h-3.5 text-[#8A93A3]" />
                         {new Date(rev.created_at).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Fa icon={faUserCheck} className="w-3.5 h-3.5 text-[#8A93A3]" />
+                        <UserCheck className="w-3.5 h-3.5 text-[#8A93A3]" />
                         {rev.editor_id}
                       </span>
                     </div>
@@ -319,7 +318,7 @@ export default function EntityHistoryPage() {
                       onClick={() => openCompare(rev, index)}
                       className="inline-flex items-center gap-1 text-[#3F4FBF] hover:underline font-semibold"
                     >
-                      <Fa icon={faEye} className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5" />
                       View
                     </button>
                     <span className="text-[#E3E5E9]">·</span>
@@ -327,7 +326,7 @@ export default function EntityHistoryPage() {
                       href={`/entity/${slug}/edit`}
                       className="inline-flex items-center gap-1 text-[#3F4FBF] hover:underline font-semibold"
                     >
-                      <Fa icon={faPenToSquare} className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5" />
                       Edit
                     </Link>
                     {canRevert && (
@@ -338,7 +337,7 @@ export default function EntityHistoryPage() {
                           onClick={() => setRevertTarget(rev)}
                           className="inline-flex items-center gap-1 text-[#A85238] hover:underline font-semibold"
                         >
-                          <Fa icon={faRotateLeft} className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-3.5 h-3.5" />
                           {undoingARevert ? 'Undo this revert' : 'Revert this revision'}
                         </button>
                       </>
@@ -349,7 +348,7 @@ export default function EntityHistoryPage() {
                       onClick={() => setChallengeTarget(rev)}
                       className="inline-flex items-center gap-1 text-[#8A93A3] hover:text-[#A85238] hover:underline font-semibold"
                     >
-                      <Fa icon={faFlag} className="w-3.5 h-3.5" />
+                      <Flag className="w-3.5 h-3.5" />
                       Challenge
                     </button>
                   </div>

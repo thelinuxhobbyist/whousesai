@@ -2,16 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Fa from '@/components/Fa';
 import {
-  faBookOpen,
-  faLayerGroup,
-  faPlus,
-  faIdCard,
-  faBars,
-  faXmark,
-  faHouse,
-} from '@fortawesome/free-solid-svg-icons';
+  BookOpen,
+  Home,
+  IdCard,
+  Layers,
+  Menu,
+  Plus,
+  X,
+} from 'lucide-react';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,7 +21,7 @@ export default function Navbar() {
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-[36px] h-[36px] rounded-lg bg-[#F8F9FB] border border-[#E3E5E9] flex items-center justify-center text-[#3F4FBF] transition-colors group-hover:border-[#3F4FBF]">
-            <Fa icon={faIdCard} className="w-5 h-5 text-[#3F4FBF]" />
+            <IdCard className="w-5 h-5 text-[#3F4FBF]" />
           </div>
           <div className="flex flex-col leading-tight">
             <span className="serif font-semibold text-[18px] text-[#1E2A3A] tracking-tight">
@@ -40,28 +39,28 @@ export default function Navbar() {
             href="/"
             className="text-[#5B6472] hover:text-[#3F4FBF] transition-colors flex items-center gap-2 font-medium"
           >
-            <Fa icon={faHouse} className="w-4 h-4 text-[#8A93A3]" />
+            <Home className="w-4 h-4 text-[#8A93A3]" />
             Home
           </Link>
           <Link
             href="/explore"
             className="text-[#5B6472] hover:text-[#3F4FBF] transition-colors flex items-center gap-2 font-medium"
           >
-            <Fa icon={faBookOpen} className="w-4 h-4 text-[#8A93A3]" />
+            <BookOpen className="w-4 h-4 text-[#8A93A3]" />
             Explore Directory
           </Link>
           <Link
             href="/tools"
             className="text-[#5B6472] hover:text-[#3F4FBF] transition-colors flex items-center gap-2 font-medium"
           >
-            <Fa icon={faLayerGroup} className="w-4 h-4 text-[#8A93A3]" />
+            <Layers className="w-4 h-4 text-[#8A93A3]" />
             AI Tools
           </Link>
           <Link
             href="/add"
             className="btn btn-forest text-[13.5px] font-semibold"
           >
-            <Fa icon={faPlus} className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
             <span>Add Entity</span>
           </Link>
         </div>
@@ -72,7 +71,7 @@ export default function Navbar() {
           aria-label="Toggle navigation menu"
           className="md:hidden p-2 rounded-md text-[#1E2A3A] hover:bg-[#F8F9FB] border border-[#E3E5E9] transition-colors"
         >
-          {mobileMenuOpen ? <Fa icon={faXmark} className="w-5 h-5 text-[#1E2A3A]" /> : <Fa icon={faBars} className="w-5 h-5 text-[#1E2A3A]" />}
+          {mobileMenuOpen ? <X className="w-5 h-5 text-[#1E2A3A]" /> : <Menu className="w-5 h-5 text-[#1E2A3A]" />}
         </button>
       </div>
 
@@ -84,7 +83,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[14.5px] text-[#1E2A3A] hover:bg-[#F8F9FB] font-medium transition-colors"
           >
-            <Fa icon={faHouse} className="w-4 h-4 text-[#3F4FBF]" />
+            <Home className="w-4 h-4 text-[#3F4FBF]" />
             Home
           </Link>
           <Link
@@ -92,7 +91,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[14.5px] text-[#1E2A3A] hover:bg-[#F8F9FB] font-medium transition-colors"
           >
-            <Fa icon={faBookOpen} className="w-4 h-4 text-[#3F4FBF]" />
+            <BookOpen className="w-4 h-4 text-[#3F4FBF]" />
             Explore Directory
           </Link>
           <Link
@@ -100,7 +99,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[14.5px] text-[#1E2A3A] hover:bg-[#F8F9FB] font-medium transition-colors"
           >
-            <Fa icon={faLayerGroup} className="w-4 h-4 text-[#3F4FBF]" />
+            <Layers className="w-4 h-4 text-[#3F4FBF]" />
             AI Tools Directory
           </Link>
           <div className="pt-2 border-t border-[#E3E5E9]">
@@ -109,7 +108,7 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="btn btn-forest w-full justify-center text-[14px] font-semibold py-2.5"
             >
-              <Fa icon={faPlus} className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
               <span>Add New Entity</span>
             </Link>
           </div>
