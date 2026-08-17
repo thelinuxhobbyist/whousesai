@@ -6,8 +6,8 @@ import {
   CheckCheck,
   GitBranch,
   Globe,
-  IdCard,
 } from 'lucide-react';
+import { siteAssets } from '@/lib/site-assets';
 
 export default function Footer() {
   return (
@@ -17,12 +17,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#F8F9FB] border border-[#E3E5E9] flex items-center justify-center text-[#3F4FBF]">
-                <IdCard className="w-4 h-4 text-[#3F4FBF]" />
-              </div>
-              <span className="serif font-semibold text-[18px] text-[#1E2A3A]">
-                WhoUses<span className="text-[#3F4FBF]">AI</span>.com
-              </span>
+              <img
+                src={siteAssets.logo.svg}
+                alt="WhoUsesAI.com"
+                className="h-[30px] w-auto"
+              />
             </div>
             <h4 className="serif text-[17px] font-semibold text-[#1E2A3A]">
               A public record of AI adoption

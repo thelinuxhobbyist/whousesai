@@ -5,12 +5,12 @@ import Link from 'next/link';
 import {
   BookOpen,
   Home,
-  IdCard,
   Layers,
   Menu,
   Plus,
   X,
 } from 'lucide-react';
+import { siteAssets } from '@/lib/site-assets';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,17 +20,14 @@ export default function Navbar() {
       <div className="max-w-[1180px] mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-[36px] h-[36px] rounded-lg bg-[#F8F9FB] border border-[#E3E5E9] flex items-center justify-center text-[#3F4FBF] transition-colors group-hover:border-[#3F4FBF]">
-            <IdCard className="w-5 h-5 text-[#3F4FBF]" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="serif font-semibold text-[18px] text-[#1E2A3A] tracking-tight">
-              WhoUses<span className="text-[#3F4FBF]">AI</span>
-            </span>
-            <span className="text-[9.5px] tracking-[0.08em] text-[#8A93A3] uppercase font-sans font-medium">
-              Open AI Directory
-            </span>
-          </div>
+          <img
+            src={siteAssets.logo.svg}
+            alt="WhoUsesAI"
+            className="h-[34px] w-auto"
+          />
+          <span className="text-[9.5px] tracking-[0.08em] text-[#8A93A3] uppercase font-sans font-medium hidden sm:block">
+            Open AI Directory
+          </span>
         </Link>
 
         {/* Primary Desktop Navigation */}
