@@ -20,7 +20,7 @@ export default function Footer() {
               <img
                 src={siteAssets.logo.svg}
                 alt="WhoUsesAI.com"
-                className="h-[30px] w-auto"
+                className="h-[36px] w-auto"
               />
             </div>
             <h4 className="serif text-[17px] font-semibold text-[#1E2A3A]">

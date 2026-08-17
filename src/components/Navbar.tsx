@@ -19,15 +19,12 @@ export default function Navbar() {
     <nav className="border-b border-[#E3E5E9] bg-white py-3.5 sticky top-0 z-40 shadow-[0_1px_3px_rgba(30,42,58,0.03)]">
       <div className="max-w-[1180px] mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center group">
           <img
             src={siteAssets.logo.svg}
             alt="WhoUsesAI"
-            className="h-[34px] w-auto"
+            className="h-[41px] w-auto"
           />
-          <span className="text-[9.5px] tracking-[0.08em] text-[#8A93A3] uppercase font-sans font-medium hidden sm:block">
-            Open AI Directory
-          </span>
         </Link>
 
         {/* Primary Desktop Navigation */}
