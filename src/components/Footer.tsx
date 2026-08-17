@@ -22,9 +22,6 @@ export default function Footer() {
                 alt={`${SITE_NAME}.com`}
                 className="h-[44px] w-auto md:h-[56px]"
               />
-              <p className="text-[12.5px] italic text-[#5B6472]">
-                {SITE_TAGLINE}
-              </p>
             </div>
             <h4 className="serif text-[17px] font-semibold text-[#1E2A3A]">
               A public record of AI adoption
