@@ -1,39 +1,40 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ReportModal from '@/components/ReportModal';
+import ClaimCard from '@/components/ClaimCard';
 import { getTypeBadge } from '@/components/EntityCard';
-import { Entity, Claim } from '@/lib/types';
+import { Claim, Entity, EntityReport, ReportKind } from '@/lib/types';
+import {
+  formatLongDate,
+  inferEvidenceStatus,
+  revisionActorLabel,
+} from '@/lib/evidence';
 import Link from 'next/link';
 import {
   ArrowLeft,
   BookOpen,
   Calendar,
   Edit3,
-  ExternalLink,
-  FileText,
   Flag,
   History,
+  Info,
   Share2,
-  Tag,
-  UserCheck,
 } from 'lucide-react';
-
-function toolAnchor(tool: string) {
-  return tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
 
 export default function EntityDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string;
 
   const [entity, setEntity] = useState<Entity | null>(null);
+  const [reports, setReports] = useState<EntityReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportMode, setReportMode] = useState<ReportKind>('report');
+  const [claimTarget, setClaimTarget] = useState<{ index: number; use: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -42,13 +43,20 @@ export default function EntityDetailPage() {
     }
   }, [slug]);
 
-  const fetchEntity = async () => {
-    setLoading(true);
+  const fetchEntity = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       const res = await fetch(`/api/entities/${slug}`);
       const data = await res.json();
       if (data.success) {
         setEntity(data.entity);
+        if (data.entity?.id) {
+          const reportRes = await fetch(`/api/reports?entity_id=${data.entity.id}`);
+          const reportData = await reportRes.json();
+          if (reportData.success) {
+            setReports(reportData.reports);
+          }
+        }
       } else {
         setEntity(null);
       }
@@ -63,6 +71,12 @@ export default function EntityDetailPage() {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openClaimAction = (mode: ReportKind, index: number, use: string) => {
+    setReportMode(mode);
+    setClaimTarget({ index, use });
+    setReportModalOpen(true);
   };
 
   if (loading) {
@@ -86,12 +100,9 @@ export default function EntityDetailPage() {
         <div className="max-w-xl mx-auto px-6 py-24 text-center space-y-4">
           <h2 className="serif text-2xl font-semibold">Entity Not Found</h2>
           <p className="text-sm text-[#5B6472]">
-            We couldn't find an entry for "{slug}". It might have been renamed or moved.
+            We couldn&apos;t find an entry for &quot;{slug}&quot;. It might have been renamed or moved.
           </p>
-          <Link
-            href="/"
-            className="btn btn-forest text-sm"
-          >
+          <Link href="/" className="btn btn-forest text-sm">
             <ArrowLeft className="w-4 h-4" /> Return to Directory
           </Link>
         </div>
@@ -104,13 +115,22 @@ export default function EntityDetailPage() {
   const content = rev.content;
   const typeInfo = getTypeBadge(entity.type);
   const TypeIcon = typeInfo.icon;
+  const activeReports = reports.filter(
+    (report) => report.status !== 'dismissed' && report.revision_id === rev.id
+  );
+
+  const claimReports = (index: number, use: string) =>
+    activeReports.filter((report) => {
+      if (report.claim_index === index) return true;
+      if (report.claim_use && report.claim_use === use) return true;
+      return false;
+    });
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#1E2A3A] flex flex-col font-sans">
       <Navbar />
 
       <main className="max-w-[840px] mx-auto px-6 py-10 space-y-8 w-full flex-grow">
-        {/* Back Link */}
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-[#5B6472] hover:text-[#3F4FBF] transition-colors"
@@ -118,36 +138,33 @@ export default function EntityDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Directory
         </Link>
 
-        {/* Revision Header Banner */}
-        <div className="rounded-[6px] bg-white border border-[#E3E5E9] border-l-4 border-l-[#3F4FBF] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[12.5px]">
-          <div className="flex flex-col gap-1 text-[#1E2A3A]">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mono px-2 py-0.5 rounded bg-[#F8F9FB] border border-[#E3E5E9] font-semibold text-[#3F4FBF]">
-                Revision #{rev.revision_number} — Current
+        <div className="rounded-[6px] bg-white border border-[#E3E5E9] border-l-4 border-l-[#3F4FBF] p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="mono inline-block px-2 py-0.5 rounded bg-[#F8F9FB] border border-[#E3E5E9] font-semibold text-[#3F4FBF] text-[12.5px]">
+              Revision #{rev.revision_number} — Current
+            </span>
+            <p className="text-[13.5px] text-[#1E2A3A]">{rev.edit_summary}</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-[#8A93A3]">
+              <span>{revisionActorLabel(rev.editor_id, rev.action_type)}</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {formatLongDate(rev.created_at)}
               </span>
-              <span className="text-[#5B6472]">{rev.edit_summary}</span>
             </div>
             {rev.action_type === 'revert' && rev.revert_reason && (
-              <span className="text-[#5B6472]">
+              <p className="text-[12.5px] text-[#5B6472]">
                 Reason: {rev.revert_reason}
                 {rev.revert_comment ? ` — ${rev.revert_comment}` : ''}
-              </span>
+              </p>
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-[#8A93A3]">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
-              {new Date(rev.created_at).toLocaleDateString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5" />
-              {rev.editor_id}
-            </span>
-          </div>
+          <Link href={`/entity/${slug}/history`} className="btn btn-outline text-sm shrink-0">
+            <History className="w-4 h-4 text-[#3F4FBF]" />
+            View History
+          </Link>
         </div>
 
-        {/* Title & Entity Meta */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold border ${typeInfo.color}`}>
@@ -163,38 +180,32 @@ export default function EntityDetailPage() {
           </div>
 
           <h1 className="serif text-4xl sm:text-5xl font-semibold text-[#1E2A3A] tracking-tight">
-            {entity.name}
+            Documented AI use at {entity.name}
           </h1>
         </div>
 
-        {/* Primary Action Buttons */}
         <div className="flex flex-wrap items-center gap-3 border-y border-[#E3E5E9] py-4">
-          <Link
-            href={`/entity/${slug}/edit`}
-            className="btn btn-forest text-sm"
-          >
+          <Link href={`/entity/${slug}/edit`} className="btn btn-forest text-sm">
             <Edit3 className="w-4 h-4" />
-            <span>[ Edit Entry ]</span>
+            Edit Entry
           </Link>
 
-          <Link
-            href={`/entity/${slug}/history`}
-            className="btn btn-outline text-sm"
-          >
+          <Link href={`/entity/${slug}/history`} className="btn btn-outline text-sm">
             <History className="w-4 h-4 text-[#3F4FBF]" />
-            <span>[ View History ]</span>
+            Compare versions
           </Link>
 
-          <button
-            onClick={handleShare}
-            className="btn btn-outline text-sm"
-          >
+          <button onClick={handleShare} className="btn btn-outline text-sm">
             <Share2 className="w-4 h-4 text-[#3F4FBF]" />
             <span>{copied ? 'Copied Link!' : 'Share'}</span>
           </button>
 
           <button
-            onClick={() => setReportModalOpen(true)}
+            onClick={() => {
+              setReportMode('report');
+              setClaimTarget(null);
+              setReportModalOpen(true);
+            }}
             className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-[#8A93A3] hover:text-[#A85238] px-3 py-2 rounded transition-colors"
           >
             <Flag className="w-3.5 h-3.5" />
@@ -202,167 +213,87 @@ export default function EntityDetailPage() {
           </button>
         </div>
 
-        {/* Section: Overview / How [Entity] Uses AI */}
         <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
           <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-            How {entity.name} uses AI
+            Introduction
           </h2>
           <p className="text-[15px] text-[#1E2A3A] leading-relaxed whitespace-pre-line">
             {content.description}
           </p>
+          <p className="flex items-start gap-2 text-[12.5px] leading-relaxed text-[#8A93A3] pt-2 border-t border-[#E3E5E9]">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#8A93A3]" aria-hidden="true" />
+            <span>
+              <strong className="font-semibold text-[#5B6472]">
+                Claims are based on publicly available evidence and may be challenged or updated.
+              </strong>{' '}
+              WhoUsesAI does not represent the organisations listed or imply their endorsement.
+            </span>
+          </p>
         </section>
 
-        {content.claims && content.claims.length > 0 ? (
-          <section className="space-y-4">
-            <div className="rounded-[6px] bg-white border border-[#E3E5E9] px-6 sm:px-8 py-5 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
-                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">AI Claims & Evidence</h2>
-              </div>
-              <p className="text-[12.5px] text-[#8A93A3] mt-1.5">
-                Each claim combines the use case, tool, and supporting evidence in one place. Challenge or correct any claim by submitting a revision.
-              </p>
+        <section className="space-y-4">
+          <div className="rounded-[6px] bg-white border border-[#E3E5E9] px-6 sm:px-8 py-5 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
+              <h2 className="serif text-[22px] font-semibold text-[#1E2A3A]">Claims and evidence</h2>
             </div>
+            <p className="text-[12.5px] text-[#8A93A3] mt-1.5">
+              Each claim shows the use case, the statement, the source, and evidence strength. Challenge a claim if it looks wrong — the original stays in the history.
+            </p>
+          </div>
 
+          {(content.claims?.length ?? 0) > 0 ? (
             <div className="space-y-4">
-              {(content.claims as Claim[]).map((claim, idx) => (
-                <article
-                  key={idx}
-                  id={`claim-${idx}`}
-                  className="rounded-[6px] bg-white border border-[#E3E5E9] shadow-[0_1px_2px_rgba(30,42,58,0.05)] overflow-hidden scroll-mt-24"
-                >
-                  <div className="p-5 sm:p-6 space-y-4">
-                    <div>
-                      <span className="text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
-                        Use Case
-                      </span>
-                      <h3 className="mt-1 text-[17px] sm:text-[18px] font-semibold text-[#1E2A3A] leading-snug">
-                        {claim.use}
-                      </h3>
-                    </div>
+              {(content.claims as Claim[]).map((claim, idx) => {
+                const status = inferEvidenceStatus(claim.sources, entity.name, claim.evidence_status);
+                const related = claimReports(idx, claim.use);
+                const challenges = related.filter((item) => item.kind === 'challenge');
+                const orgResponses = related.filter((item) => item.kind === 'org_response');
 
-                    {claim.note && (
-                      <p className="text-[14.5px] text-[#5B6472] leading-relaxed">
-                        {claim.note}
-                      </p>
-                    )}
-
-                    {claim.tool && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
-                          <Tag className="w-3 h-3" /> Tool
-                        </span>
-                        <Link
-                          href={`/tools#tool-${toolAnchor(claim.tool)}`}
-                          className="mono inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 text-[12.5px] font-semibold hover:border-[#3F4FBF] transition-colors"
-                        >
-                          {claim.tool}
-                          <ExternalLink className="w-3 h-3 opacity-70" />
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-[#E3E5E9] bg-[#F8F9FB] px-5 sm:px-6 py-3.5">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans shrink-0 pt-0.5">
-                        <FileText className="w-3.5 h-3.5 text-[#3F4FBF]" /> Evidence
-                      </span>
-                      {claim.sources && claim.sources.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {claim.sources.map((src, sidx) => (
-                            <a
-                              key={sidx}
-                              href={src.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white border border-[#E3E5E9] text-[12.5px] font-medium text-[#3F4FBF] hover:border-[#3F4FBF] transition-colors"
-                            >
-                              <span className="truncate max-w-[240px]">{src.title || src.url}</span>
-                              <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-[12.5px] text-[#8A93A3] italic">
-                          No evidence attached to this claim yet.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
+                return (
+                  <ClaimCard
+                    key={idx}
+                    claim={claim}
+                    claimIndex={idx}
+                    entityName={entity.name}
+                    slug={slug}
+                    evidenceStatus={status}
+                    challenges={challenges}
+                    orgResponses={orgResponses}
+                    onChallenge={() => openClaimAction('challenge', idx, claim.use)}
+                    onOrgResponse={() => openClaimAction('org_response', idx, claim.use)}
+                  />
+                );
+              })}
             </div>
-          </section>
-        ) : (
-          /* Legacy fallback: flat ai_uses + ai_tools + sources for old revisions */
-          <>
-            {content.ai_uses && content.ai_uses.length > 0 && (
-              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-                  AI Applications & Use Cases
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {content.ai_uses.map((use, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 rounded bg-[#F8F9FB] border border-[#E3E5E9] text-[13.5px] font-medium text-[#1E2A3A]">
-                      <span className="flex h-2 w-2 rounded-full bg-[#3F4FBF]" />
-                      {use}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-            {content.ai_tools && content.ai_tools.length > 0 && (
-              <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-                <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] border-b border-[#E3E5E9] pb-3">
-                  AI Tools & Technologies
-                </h2>
-                <div className="flex flex-wrap gap-3">
-                  {content.ai_tools.map((tool, idx) => (
-                    <Link key={idx} href={`/explore?tool=${encodeURIComponent(tool)}`}
-                      className="mono flex items-center gap-2 px-3.5 py-1.5 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#E3E5E9] font-semibold text-[13px] hover:border-[#3F4FBF] transition-all">
-                      <span>{tool}</span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-            <section className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-6 sm:p-8 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-              <h2 className="serif text-[22px] font-semibold text-[#1E2A3A] flex items-center gap-2 border-b border-[#E3E5E9] pb-3">
-                <BookOpen className="w-5 h-5 text-[#3F4FBF]" />
-                Sources & Evidence
-              </h2>
-              {content.sources && content.sources.length > 0 ? (
-                <div className="space-y-3 pt-2">
-                  {content.sources.map((src, idx) => (
-                    <a key={idx} href={src.url} target="_blank" rel="noopener noreferrer"
-                      className="group flex items-start justify-between p-4 rounded bg-[#F8F9FB] hover:bg-[#E3E5E9]/60 border border-[#E3E5E9] transition-colors gap-4">
-                      <div className="space-y-1 overflow-hidden">
-                        <span className="text-[14px] font-semibold text-[#1E2A3A] group-hover:text-[#3F4FBF] transition-colors block truncate">{src.title || src.url}</span>
-                        <span className="mono text-[11.5px] text-[#8A93A3] block truncate">{src.url}</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-[#8A93A3] group-hover:text-[#3F4FBF] flex-shrink-0" />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[13.5px] text-[#8A93A3] italic">No external sources attached to this entry yet.</p>
-              )}
-            </section>
-          </>
-        )}
+          ) : (
+            <div className="rounded-[6px] bg-white border border-[#E3E5E9] p-6 text-[13.5px] text-[#5B6472]">
+              No documented claims yet.{' '}
+              <Link href={`/entity/${slug}/edit`} className="text-[#3F4FBF] font-semibold hover:underline">
+                Add claims and evidence
+              </Link>
+              .
+            </div>
+          )}
+        </section>
       </main>
 
       <Footer />
 
-      {/* Report Modal */}
       <ReportModal
+        key={`${reportMode}-${claimTarget?.index ?? 'page'}`}
         isOpen={reportModalOpen}
-        onClose={() => setReportModalOpen(false)}
+        onClose={() => {
+          setReportModalOpen(false);
+          setClaimTarget(null);
+        }}
         entityId={entity.id}
         revisionId={rev.id}
         entityName={entity.name}
+        mode={reportMode}
+        claimIndex={claimTarget?.index}
+        claimUse={claimTarget?.use}
+        onSubmitted={() => fetchEntity({ silent: true })}
       />
     </div>
   );

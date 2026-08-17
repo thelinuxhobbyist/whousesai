@@ -50,6 +50,21 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Invalid entity type' }, { status: 400 });
     }
 
+    const claims = content.claims?.filter((c) => c.use?.trim()) || [];
+    if (claims.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'At least one structured claim is required' },
+        { status: 400 }
+      );
+    }
+
+    if (claims.some((c) => !(c.sources || []).some((s) => s.url?.trim()))) {
+      return NextResponse.json(
+        { success: false, error: 'Each claim must include at least one evidence source URL' },
+        { status: 400 }
+      );
+    }
+
     const result = await createRevision(entity.id, content, {
       editSummary: edit_summary || 'Updated entry details',
       editorId: editor_id || 'Anonymous Contributor',

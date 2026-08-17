@@ -1,10 +1,26 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { siteAssets } from "@/lib/site-assets";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_TITLE, siteAssets } from "@/lib/site-assets";
 
 export const metadata: Metadata = {
-  title: "WhoUsesAI — Open AI Directory",
-  description: "An open, community-built directory documenting who is using AI and how they are using it. Inspired by Wikipedia's open editing philosophy.",
+  title: {
+    default: SITE_TITLE,
+    template: `%s — ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [SITE_NAME, SITE_TAGLINE, "AI adoption", "public directory"],
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
   icons: {
     icon: [
       { url: siteAssets.favicon.ico },

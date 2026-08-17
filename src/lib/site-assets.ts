@@ -1,5 +1,11 @@
 export const ASSET_CDN = 'https://cdn.whousesai.com';
 
+export const SITE_NAME = 'WhoUsesAI';
+export const SITE_TAGLINE = 'Open Directory of AI Adoption';
+export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`;
+export const SITE_DESCRIPTION =
+  'WhoUsesAI is an open, public directory of AI adoption documenting who is using AI, what they are using it for, and the evidence behind each claim.';
+
 const logoBase = `${ASSET_CDN}/assets/logos`;
 const faviconBase = `${logoBase}/favicon`;
 

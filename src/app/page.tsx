@@ -86,7 +86,7 @@ export default function HomePage() {
 
           <div className="max-w-[640px] mb-8 space-y-4 text-[#5B6472] text-[16.5px] leading-relaxed">
             <p>
-              Discover real-world AI adoption across companies, organisations, governments, universities, and research institutions.
+              An open, public directory of AI adoption across companies, organisations, governments, universities, and research institutions.
             </p>
             <p>
               Every entry is backed by evidence. Anyone can contribute, challenge, or correct a claim — and{' '}

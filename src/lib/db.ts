@@ -8,10 +8,12 @@ import {
   EntityReport,
   SearchFilterParams,
   RevisionActionType,
-  RevertReason
+  RevertReason,
+  ReportKind
 } from './types';
 import { normalizeEntityType, shouldAutoMigrateType } from './entityTypes';
 import { buildRevertEditSummary } from './revisionLabels';
+import { needsClaimsMigration, normalizeRevisionContent } from './evidence';
 
 export interface CreateRevisionOptions {
   editSummary: string;
@@ -115,16 +117,21 @@ async function createLocalSqliteDb(): Promise<SqlDb> {
 }
 
 async function getDb(): Promise<SqlDb> {
-  const d1 = await getD1Binding();
-  if (d1) {
-    if (!d1ReadyPromise) {
-      d1ReadyPromise = (async () => {
-        const adapter = createD1Adapter(d1);
-        await ensureRevisionActionColumns(adapter);
-        return adapter;
-      })();
+  // next dev should use local SQLite. The OpenNext D1 binding in `next dev`
+  // is an empty local database and would hide the directory.
+  const useLocalSqlite = process.env.NODE_ENV === 'development';
+  if (!useLocalSqlite) {
+    const d1 = await getD1Binding();
+    if (d1) {
+      if (!d1ReadyPromise) {
+        d1ReadyPromise = (async () => {
+          const adapter = createD1Adapter(d1);
+          await initTables(adapter);
+          return adapter;
+        })();
+      }
+      return d1ReadyPromise;
     }
-    return d1ReadyPromise;
   }
 
   if (!localDbPromise) {
@@ -134,8 +141,8 @@ async function getDb(): Promise<SqlDb> {
 }
 
 async function initTables(db: SqlDb) {
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS entities (
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS entities (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
@@ -146,9 +153,8 @@ async function initTables(db: SqlDb) {
       is_protected INTEGER DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS entity_revisions (
+    )`,
+    `CREATE TABLE IF NOT EXISTS entity_revisions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       entity_id INTEGER NOT NULL,
       revision_number INTEGER NOT NULL,
@@ -163,18 +169,16 @@ async function initTables(db: SqlDb) {
       revert_reason TEXT,
       revert_comment TEXT,
       FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS ai_tools (
+    )`,
+    `CREATE TABLE IF NOT EXISTS ai_tools (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       slug TEXT UNIQUE NOT NULL,
       description TEXT NOT NULL,
       category TEXT,
       website TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS reports (
+    )`,
+    `CREATE TABLE IF NOT EXISTS reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       entity_id INTEGER NOT NULL,
       revision_id INTEGER NOT NULL,
@@ -182,17 +186,26 @@ async function initTables(db: SqlDb) {
       details TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
       created_at TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'report',
+      claim_index INTEGER,
+      claim_use TEXT,
       FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
-    );
-  `);
+    )`,
+  ];
+
+  for (const sql of statements) {
+    await db.run(sql);
+  }
 
   await ensureRevisionActionColumns(db);
+  await ensureReportExtraColumns(db);
 
   const countRow = await db.get<{ count: number }>(`SELECT COUNT(*) as count FROM entities`);
   if ((countRow?.count ?? 0) === 0) {
     await seedLocalDb(db);
   } else {
     await migrateEntityTypes(db);
+    await migrateLegacyClaimsInDb(db);
   }
 }
 
@@ -200,6 +213,7 @@ async function initTables(db: SqlDb) {
 async function ensureRevisionActionColumns(db: SqlDb) {
   try {
     const cols = await db.all<{ name: string }>(`PRAGMA table_info(entity_revisions)`);
+    if (cols.length === 0) return;
     const names = new Set(cols.map((c) => c.name));
 
     if (!names.has('action_type')) {
@@ -219,6 +233,27 @@ async function ensureRevisionActionColumns(db: SqlDb) {
     }
   } catch (err) {
     console.error('ensureRevisionActionColumns failed', err);
+  }
+}
+
+/** Add claim-level challenge / organisation-response columns on existing databases. */
+async function ensureReportExtraColumns(db: SqlDb) {
+  try {
+    const cols = await db.all<{ name: string }>(`PRAGMA table_info(reports)`);
+    if (cols.length === 0) return;
+    const names = new Set(cols.map((c) => c.name));
+
+    if (!names.has('kind')) {
+      await db.run(`ALTER TABLE reports ADD COLUMN kind TEXT NOT NULL DEFAULT 'report'`);
+    }
+    if (!names.has('claim_index')) {
+      await db.run(`ALTER TABLE reports ADD COLUMN claim_index INTEGER`);
+    }
+    if (!names.has('claim_use')) {
+      await db.run(`ALTER TABLE reports ADD COLUMN claim_use TEXT`);
+    }
+  } catch (err) {
+    console.error('ensureReportExtraColumns failed', err);
   }
 }
 
@@ -248,6 +283,39 @@ async function migrateEntityTypes(db: SqlDb) {
         // Leave malformed revision JSON untouched
       }
     }
+  }
+}
+
+/** Persist structured claims for entities whose current revision still uses legacy arrays. */
+async function migrateLegacyClaimsInDb(db: SqlDb) {
+  const entities = await db.all<{ id: number; slug: string; current_revision_id: number }>(
+    `SELECT id, slug, current_revision_id FROM entities WHERE current_revision_id IS NOT NULL`
+  );
+
+  for (const entity of entities) {
+    const rev = await db.get<{ id: number; content_json: string; revision_number: number }>(
+      `SELECT id, content_json, revision_number FROM entity_revisions WHERE id = ?`,
+      entity.current_revision_id
+    );
+    if (!rev) continue;
+
+    let content: RevisionContent;
+    try {
+      content = JSON.parse(rev.content_json);
+    } catch {
+      continue;
+    }
+
+    if (!needsClaimsMigration(content)) continue;
+
+    const migrated = normalizeRevisionContent(content);
+    if (!migrated.claims?.length) continue;
+
+    await createRevision(entity.id, migrated, {
+      editSummary: 'Migrated to structured claims and evidence format',
+      editorId: 'WhoUsesAI System',
+      actionType: 'edit',
+    });
   }
 }
 
@@ -292,18 +360,33 @@ async function seedLocalDb(db: SqlDb) {
     edit_summary: 'Initial entry created',
     editor_id: 'Anonymous Contributor #1042',
     created_at: '2026-08-05T10:00:00Z',
-    content: {
+    content: normalizeRevisionContent({
       name: 'BBC',
       type: 'organisation',
       industry: 'Media & Broadcasting',
       country: 'United Kingdom',
       description: 'BBC uses AI in areas such as research and content production documented by publicly available sources.',
-      ai_uses: ['Research', 'Content Production'],
-      ai_tools: ['ChatGPT'],
-      sources: [
-        { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' }
-      ]
-    }
+      claims: [
+        {
+          use: 'Research',
+          tool: 'ChatGPT',
+          note: 'BBC teams use AI tools including ChatGPT for research workflows, under published AI principles.',
+          sources: [
+            { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
+          ],
+        },
+        {
+          use: 'Content Production',
+          note: 'BBC documents AI use in content production under its public AI principles.',
+          sources: [
+            { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
+          ],
+        },
+      ],
+      ai_uses: [],
+      ai_tools: [],
+      sources: [],
+    }),
   });
 
   const bbcRev2 = await insertRevision(db, {
@@ -313,19 +396,41 @@ async function seedLocalDb(db: SqlDb) {
     edit_summary: 'Added Microsoft Copilot tools',
     editor_id: 'Anonymous Contributor #3391',
     created_at: '2026-08-08T11:20:00Z',
-    content: {
+    content: normalizeRevisionContent({
       name: 'BBC',
       type: 'organisation',
       industry: 'Media & Broadcasting',
       country: 'United Kingdom',
       description: 'BBC uses AI in areas such as research, content production and productivity tools across teams.',
-      ai_uses: ['Research', 'Content Production', 'Productivity'],
-      ai_tools: ['ChatGPT', 'Microsoft Copilot'],
-      sources: [
-        { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
-        { title: 'BBC Tech Blog: Microsoft Copilot Pilot', url: 'https://www.bbc.co.uk/rd/blog/copilot-enterprise' }
-      ]
-    }
+      claims: [
+        {
+          use: 'Research',
+          tool: 'ChatGPT',
+          note: 'BBC teams use AI tools including ChatGPT for research workflows, under published AI principles.',
+          sources: [
+            { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
+          ],
+        },
+        {
+          use: 'Content Production',
+          note: 'BBC documents AI use in content production under its public AI principles.',
+          sources: [
+            { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
+          ],
+        },
+        {
+          use: 'Productivity',
+          tool: 'Microsoft Copilot',
+          note: 'BBC has piloted Microsoft Copilot for enterprise productivity across teams.',
+          sources: [
+            { title: 'BBC Tech Blog: Microsoft Copilot Pilot', url: 'https://www.bbc.co.uk/rd/blog/copilot-enterprise' },
+          ],
+        },
+      ],
+      ai_uses: [],
+      ai_tools: [],
+      sources: [],
+    }),
   });
 
   const bbcRev3 = await insertRevision(db, {
@@ -335,20 +440,49 @@ async function seedLocalDb(db: SqlDb) {
     edit_summary: 'Added accessibility and translation AI uses with Adobe Firefly',
     editor_id: 'Anonymous Contributor #9021',
     created_at: '2026-08-10T14:30:00Z',
-    content: {
+    content: normalizeRevisionContent({
       name: 'BBC',
       type: 'organisation',
       industry: 'Media & Broadcasting',
       country: 'United Kingdom',
       description: 'BBC uses AI in areas such as accessibility, research, content production, translation and visual asset workflows documented by publicly available sources.',
-      ai_uses: ['Accessibility', 'Research', 'Content Production', 'Translation'],
-      ai_tools: ['Microsoft Copilot', 'Adobe Firefly', 'ChatGPT'],
-      sources: [
-        { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
-        { title: 'BBC R&D: Exploring Generative AI for Accessibility', url: 'https://www.bbc.co.uk/rd/projects/ai-accessibility' },
-        { title: 'Adobe & BBC: Creative Cloud AI Integration', url: 'https://news.adobe.com/bbc-firefly-workflows' }
-      ]
-    }
+      claims: [
+        {
+          use: 'Accessibility',
+          note: 'BBC R&D explores generative AI for accessibility workflows.',
+          sources: [
+            { title: 'BBC R&D: Exploring Generative AI for Accessibility', url: 'https://www.bbc.co.uk/rd/projects/ai-accessibility' },
+          ],
+        },
+        {
+          use: 'Research',
+          tool: 'ChatGPT',
+          note: 'BBC teams use AI tools including ChatGPT for research workflows, under published AI principles.',
+          sources: [
+            { title: 'BBC Media Centre: AI Principles', url: 'https://www.bbc.co.uk/mediacentre/speeches/2023/ai-principles' },
+          ],
+        },
+        {
+          use: 'Content Production',
+          tool: 'Adobe Firefly',
+          note: 'BBC documents creative AI workflows including Adobe Firefly integration.',
+          sources: [
+            { title: 'Adobe & BBC: Creative Cloud AI Integration', url: 'https://news.adobe.com/bbc-firefly-workflows' },
+          ],
+        },
+        {
+          use: 'Translation',
+          tool: 'Microsoft Copilot',
+          note: 'BBC uses AI productivity tools including Copilot across content and translation workflows.',
+          sources: [
+            { title: 'BBC Tech Blog: Microsoft Copilot Pilot', url: 'https://www.bbc.co.uk/rd/blog/copilot-enterprise' },
+          ],
+        },
+      ],
+      ai_uses: [],
+      ai_tools: [],
+      sources: [],
+    }),
   });
 
   await db.run(`UPDATE entities SET current_revision_id = ? WHERE id = ?`, bbcRev3, bbcId);
@@ -541,6 +675,8 @@ export async function createRevision(
     revertComment = null
   } = options;
 
+  content = normalizeRevisionContent(content);
+
   const db = await getDb();
   const entityRow = await db.get<any>(`SELECT * FROM entities WHERE id = ?`, entityId);
   if (!entityRow) throw new Error('Entity not found');
@@ -704,21 +840,32 @@ export async function getAIToolBySlug(slug: string): Promise<AITool | null> {
 export async function createReport(
   entityId: number,
   revisionId: number,
-  reason: EntityReport['reason'],
-  details: string
+  reason: string,
+  details: string,
+  options?: {
+    kind?: ReportKind;
+    claimIndex?: number | null;
+    claimUse?: string | null;
+  }
 ): Promise<EntityReport> {
   const db = await getDb();
   const now = new Date().toISOString();
+  const kind = options?.kind ?? 'report';
+  const claimIndex = options?.claimIndex ?? null;
+  const claimUse = options?.claimUse ?? null;
   const res = await db.run(
     `
-    INSERT INTO reports (entity_id, revision_id, reason, details, status, created_at)
-    VALUES (?, ?, ?, ?, 'pending', ?)
+    INSERT INTO reports (entity_id, revision_id, reason, details, status, created_at, kind, claim_index, claim_use)
+    VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)
   `,
     entityId,
     revisionId,
     reason,
     details,
-    now
+    now,
+    kind,
+    claimIndex,
+    claimUse
   );
 
   return {
@@ -728,7 +875,10 @@ export async function createReport(
     reason,
     details,
     status: 'pending',
-    created_at: now
+    created_at: now,
+    kind,
+    claim_index: claimIndex,
+    claim_use: claimUse
   };
 }
 
@@ -740,6 +890,17 @@ export async function getReports(): Promise<EntityReport[]> {
     JOIN entities e ON r.entity_id = e.id
     ORDER BY r.created_at DESC
   `);
+}
+
+export async function getReportsForEntity(entityId: number): Promise<EntityReport[]> {
+  const db = await getDb();
+  return db.all<EntityReport>(`
+    SELECT r.*, e.name as entity_name, e.slug as entity_slug
+    FROM reports r
+    JOIN entities e ON r.entity_id = e.id
+    WHERE r.entity_id = ?
+    ORDER BY r.created_at DESC
+  `, entityId);
 }
 
 export async function updateReportStatus(reportId: number, status: 'pending' | 'reviewed' | 'dismissed') {
@@ -767,7 +928,7 @@ function mapEntityRow(row: any): Entity {
 
   if (row.content_json) {
     try {
-      content = JSON.parse(row.content_json);
+      content = normalizeRevisionContent(JSON.parse(row.content_json));
       const contentType = String(content.type || rawType);
       content.type =
         contentType === 'person' ? (contentType as EntityType) : normalizeEntityType(contentType);
@@ -852,7 +1013,7 @@ function mapRevisionRow(row: any): EntityRevision {
   };
 
   try {
-    content = JSON.parse(row.content_json);
+    content = normalizeRevisionContent(JSON.parse(row.content_json));
     const contentType = String(content.type || 'company');
     content.type =
       contentType === 'person' ? (contentType as EntityType) : normalizeEntityType(contentType);

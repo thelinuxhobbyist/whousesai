@@ -10,6 +10,13 @@ export interface SourceItem {
   title: string;
 }
 
+export type EvidenceStatus =
+  | 'direct'
+  | 'official'
+  | 'reputable_third_party'
+  | 'secondary'
+  | 'community_submitted';
+
 /**
  * A single evidenced AI claim: one use case + optional tool + optional note,
  * each with its own attached sources.
@@ -19,6 +26,7 @@ export interface Claim {
   tool?: string;        // e.g. "TOBi AI" (optional)
   note?: string;        // one-sentence description of what this does
   sources: SourceItem[];
+  evidence_status?: EvidenceStatus;
 }
 
 export interface RevisionContent {
@@ -104,16 +112,21 @@ export interface AITool {
   website?: string;
 }
 
+export type ReportKind = 'report' | 'challenge' | 'org_response';
+
 export interface EntityReport {
   id: number;
   entity_id: number;
   revision_id: number;
-  reason: 'incorrect' | 'spam' | 'defamation' | 'copyright' | 'malicious' | 'other';
+  reason: string;
   details: string;
   status: 'pending' | 'reviewed' | 'dismissed';
   created_at: string;
   entity_name?: string;
   entity_slug?: string;
+  kind?: ReportKind;
+  claim_index?: number | null;
+  claim_use?: string | null;
 }
 
 export interface SearchFilterParams {

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { EntityRevision } from '@/lib/types';
+import { Claim, EntityRevision } from '@/lib/types';
+import { claimStatement } from '@/lib/evidence';
 import { diffWords } from 'diff';
 import {
   GitCompare,
@@ -81,6 +82,17 @@ export default function RevisionDiffViewer({
       </div>
 
       {/* Structured Fields Compare */}
+      {(newContent.claims?.length || oldContent?.claims?.length) ? (
+        <div className="space-y-2">
+          <h4 className="text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider font-sans">
+            Claims &amp; Evidence Difference
+          </h4>
+          <div className="rounded bg-[#F8F9FB] p-4 border border-[#E3E5E9] space-y-3 text-xs">
+            {renderClaimDiff(oldContent?.claims, newContent.claims, newContent.name)}
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* AI Uses */}
         <div className="space-y-2">
@@ -179,5 +191,59 @@ export default function RevisionDiffViewer({
         </div>
       </div>
     </div>
+  );
+}
+
+function claimKey(claim: Claim): string {
+  return `${claim.use}::${claim.tool || ''}::${claim.note || ''}`;
+}
+
+function renderClaimDiff(
+  oldClaims: Claim[] | undefined,
+  newClaims: Claim[] | undefined,
+  entityName: string
+) {
+  const oldList = oldClaims || [];
+  const newList = newClaims || [];
+  const oldKeys = new Set(oldList.map(claimKey));
+  const newKeys = new Set(newList.map(claimKey));
+
+  const removed = oldList.filter((claim) => !newKeys.has(claimKey(claim)));
+  const added = newList.filter((claim) => !oldKeys.has(claimKey(claim)));
+  const unchanged = newList.filter((claim) => oldKeys.has(claimKey(claim)));
+
+  if (removed.length === 0 && added.length === 0 && unchanged.length === 0) {
+    return <span className="text-[#8A93A3] italic">No claims in either revision.</span>;
+  }
+
+  return (
+    <>
+      {removed.map((claim, i) => (
+        <div key={`removed-${i}`} className="rounded border border-[#A85238]/30 bg-[#A85238]/5 p-3">
+          <span className="text-[#A85238] font-semibold block mb-1">Removed claim</span>
+          <span className="font-medium text-[#1E2A3A]">{claim.use}</span>
+          <p className="mt-1 text-[#5B6472] line-through">{claimStatement(entityName, claim)}</p>
+        </div>
+      ))}
+      {added.map((claim, i) => (
+        <div key={`added-${i}`} className="rounded border border-[#3F4FBF]/30 bg-[#EEEDFE]/50 p-3">
+          <span className="text-[#3F4FBF] font-semibold block mb-1">Added claim</span>
+          <span className="font-medium text-[#1E2A3A]">{claim.use}</span>
+          <p className="mt-1 text-[#1E2A3A]">{claimStatement(entityName, claim)}</p>
+          {claim.sources?.length ? (
+            <p className="mt-1 text-[#5B6472]">
+              Evidence: {claim.sources.map((s) => s.title || s.url).join(', ')}
+            </p>
+          ) : null}
+        </div>
+      ))}
+      {unchanged.map((claim, i) => (
+        <div key={`same-${i}`} className="rounded border border-[#E3E5E9] bg-white p-3">
+          <span className="text-[#8A93A3] font-semibold block mb-1">Unchanged claim</span>
+          <span className="font-medium text-[#1E2A3A]">{claim.use}</span>
+          <p className="mt-1 text-[#5B6472]">{claimStatement(entityName, claim)}</p>
+        </div>
+      ))}
+    </>
   );
 }

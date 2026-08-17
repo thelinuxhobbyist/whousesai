@@ -7,11 +7,12 @@ import Footer from '@/components/Footer';
 import RevisionDiffViewer from '@/components/RevisionDiffViewer';
 import RevertModal from '@/components/RevertModal';
 import ReportModal from '@/components/ReportModal';
-import { Entity, EntityRevision } from '@/lib/types';
-import { revisionHistoryLabel } from '@/lib/revisionLabels';
+import { Entity, EntityReport, EntityRevision } from '@/lib/types';
+import { formatLongDate, revisionActorLabel } from '@/lib/evidence';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  Building2,
   Calendar,
   CheckCircle2,
   Edit3,
@@ -21,6 +22,7 @@ import {
   RotateCcw,
   UserCheck,
 } from 'lucide-react';
+import { revisionHistoryLabel } from '@/lib/revisionLabels';
 
 export default function EntityHistoryPage() {
   const params = useParams();
@@ -28,6 +30,7 @@ export default function EntityHistoryPage() {
 
   const [entity, setEntity] = useState<Entity | null>(null);
   const [revisions, setRevisions] = useState<EntityRevision[]>([]);
+  const [reports, setReports] = useState<EntityReport[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedRevA, setSelectedRevA] = useState<EntityRevision | null>(null);
@@ -54,6 +57,14 @@ export default function EntityHistoryPage() {
         setEntity(data.entity);
         const revs: EntityRevision[] = data.revisions;
         setRevisions(revs);
+
+        if (data.entity?.id) {
+          const reportRes = await fetch(`/api/reports?entity_id=${data.entity.id}`);
+          const reportData = await reportRes.json();
+          if (reportData.success) {
+            setReports(reportData.reports.filter((r: EntityReport) => r.status !== 'dismissed'));
+          }
+        }
 
         if (revs.length >= 2) {
           setSelectedRevA(revs[1]);
@@ -94,6 +105,15 @@ export default function EntityHistoryPage() {
 
   const restoredForTarget = (target: EntityRevision) =>
     revisionById(target.previous_revision_id);
+
+  const reportsForRevision = (revisionId: number) =>
+    reports.filter((report) => report.revision_id === revisionId);
+
+  const reportKindLabel = (report: EntityReport) => {
+    if (report.kind === 'challenge') return 'Community challenge';
+    if (report.kind === 'org_response') return 'Organisation response';
+    return 'Report';
+  };
 
   const optionLabel = (r: EntityRevision) =>
     `Rev #${r.revision_number} — ${revisionHistoryLabel(r, revisionById)} (${new Date(r.created_at).toLocaleDateString()})`;
@@ -247,23 +267,20 @@ export default function EntityHistoryPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="mono text-[12px] font-bold text-[#3F4FBF] bg-[#F8F9FB] border border-[#E3E5E9] px-2.5 py-1 rounded">
-                        #{rev.revision_number}
+                        Revision #{rev.revision_number}{isCurrent ? ' — Current' : ''}
                       </span>
-                      {isCurrent && (
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3F4FBF] bg-[#EEEDFE] border border-[#3F4FBF]/25 px-2 py-0.5 rounded-full font-sans">
-                          Current
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-4 text-[12px] text-[#8A93A3]">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-[#8A93A3]" />
-                        {new Date(rev.created_at).toLocaleString()}
+                        {new Date(rev.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </span>
                       <span className="flex items-center gap-1">
                         <UserCheck className="w-3.5 h-3.5 text-[#8A93A3]" />
-                        {rev.editor_id}
+                        {rev.action_type === 'revert'
+                          ? revisionActorLabel(rev.editor_id, rev.action_type)
+                          : rev.editor_id}
                       </span>
                     </div>
                   </div>
@@ -310,6 +327,42 @@ export default function EntityHistoryPage() {
                     </div>
                   ) : (
                     <p className="text-[14px] text-[#5B6472] mb-3">{rev.edit_summary}</p>
+                  )}
+
+                  {reportsForRevision(rev.id).length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {reportsForRevision(rev.id).map((report) => (
+                        <div
+                          key={report.id}
+                          className={`rounded border px-3 py-2 text-[12.5px] ${
+                            report.kind === 'org_response'
+                              ? 'border-[#E3E5E9] bg-[#F8F9FB]'
+                              : 'border-[#E8D4B8] bg-[#FFF6EB]'
+                          }`}
+                        >
+                          <p className="font-semibold text-[#1E2A3A] flex items-center gap-1.5">
+                            {report.kind === 'org_response' ? (
+                              <Building2 className="w-3.5 h-3.5 text-[#3F4FBF]" />
+                            ) : (
+                              <Flag className="w-3.5 h-3.5 text-[#A85238]" />
+                            )}
+                            {reportKindLabel(report)}
+                            {report.claim_use ? ` — ${report.claim_use}` : ''}
+                          </p>
+                          <p className="mt-0.5 text-[#5B6472]">
+                            {formatLongDate(report.created_at)} · {report.reason}
+                          </p>
+                          {report.kind === 'challenge' && (
+                            <Link
+                              href={`/entity/${slug}#claim-${report.claim_index ?? 0}`}
+                              className="mt-1 inline-block text-[#3F4FBF] font-semibold hover:underline"
+                            >
+                              View claim
+                            </Link>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3 border-t border-[#E3E5E9] text-xs">

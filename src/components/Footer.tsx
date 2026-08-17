@@ -7,7 +7,7 @@ import {
   GitBranch,
   Globe,
 } from 'lucide-react';
-import { siteAssets } from '@/lib/site-assets';
+import { SITE_NAME, SITE_TAGLINE, siteAssets } from '@/lib/site-assets';
 
 export default function Footer() {
   return (
@@ -16,18 +16,21 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="lg:col-span-1 space-y-4">
-            <div className="flex items-center gap-2.5">
+            <div className="space-y-1.5">
               <img
                 src={siteAssets.logo.svg}
-                alt="WhoUsesAI.com"
-                className="h-[36px] w-auto"
+                alt={`${SITE_NAME}.com`}
+                className="h-[44px] w-auto md:h-[56px]"
               />
+              <p className="text-[12.5px] italic text-[#5B6472]">
+                {SITE_TAGLINE}
+              </p>
             </div>
             <h4 className="serif text-[17px] font-semibold text-[#1E2A3A]">
               A public record of AI adoption
             </h4>
             <p className="text-[13.5px] text-[#5B6472] leading-relaxed">
-              WhoUsesAI is an open, community-built directory documenting{' '}
+              WhoUsesAI is an open, public directory of AI adoption documenting{' '}
               <strong className="font-semibold text-[#1E2A3A]">
                 who is using AI, what they&apos;re using it for, and the evidence behind each claim.
               </strong>
@@ -105,7 +108,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-[#E3E5E9] pt-6 text-[12px] text-[#8A93A3]">
-          <span>&copy; {new Date().getFullYear()} WhoUsesAI.com — Open community directory.</span>
+          <span>&copy; {new Date().getFullYear()} {SITE_NAME}.com — {SITE_TAGLINE}.</span>
         </div>
       </div>
     </footer>

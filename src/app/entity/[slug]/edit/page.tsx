@@ -4,16 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Entity, EntityType, RevisionContent, SourceItem, Claim } from '@/lib/types';
+import ClaimFormEditor, { cleanClaimsForSubmit } from '@/components/ClaimFormEditor';
+import { Entity, EntityType, RevisionContent, Claim } from '@/lib/types';
 import { normalizeEntityType } from '@/lib/entityTypes';
 import Link from 'next/link';
 import {
   AlertTriangle,
   ArrowLeft,
-  Plus,
   RefreshCw,
   Save,
-  Trash2,
 } from 'lucide-react';
 
 export default function EditEntityPage() {
@@ -64,24 +63,10 @@ export default function EditEntityPage() {
         setIndustry(ent.industry);
         setCountry(ent.country);
         setDescription(rev.description || '');
-        // Prefer structured claims; migrate legacy flat arrays if no claims present
         if (rev.claims && rev.claims.length > 0) {
           setClaims(rev.claims);
         } else {
-          // Build one claim per legacy ai_use, attach all sources to first claim
-          const legacyUses = rev.ai_uses || [];
-          const legacyTools = rev.ai_tools || [];
-          const legacySources = rev.sources || [];
-          if (legacyUses.length > 0) {
-            setClaims(legacyUses.map((use: string, i: number) => ({
-              use,
-              tool: legacyTools[i] || undefined,
-              note: '',
-              sources: i === 0 ? legacySources : [],
-            })));
-          } else {
-            setClaims([{ use: '', tool: '', note: '', sources: [{ title: '', url: '' }] }]);
-          }
+          setClaims([{ use: '', tool: '', note: '', sources: [{ title: '', url: '' }] }]);
         }
       }
     } catch (err) {
@@ -89,40 +74,6 @@ export default function EditEntityPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const addClaim = () => {
-    setClaims([...claims, { use: '', tool: '', note: '', sources: [{ title: '', url: '' }] }]);
-  };
-
-  const removeClaim = (ci: number) => {
-    setClaims(claims.filter((_, i) => i !== ci));
-  };
-
-  const updateClaim = (ci: number, field: keyof Omit<Claim, 'sources'>, value: string) => {
-    const next = [...claims];
-    (next[ci] as any)[field] = value;
-    setClaims(next);
-  };
-
-  const addClaimSource = (ci: number) => {
-    const next = [...claims];
-    next[ci] = { ...next[ci], sources: [...(next[ci].sources || []), { title: '', url: '' }] };
-    setClaims(next);
-  };
-
-  const updateClaimSource = (ci: number, si: number, field: 'title' | 'url', value: string) => {
-    const next = [...claims];
-    const srcs = [...(next[ci].sources || [])];
-    srcs[si] = { ...srcs[si], [field]: value };
-    next[ci] = { ...next[ci], sources: srcs };
-    setClaims(next);
-  };
-
-  const removeClaimSource = (ci: number, si: number) => {
-    const next = [...claims];
-    next[ci] = { ...next[ci], sources: next[ci].sources.filter((_, i) => i !== si) };
-    setClaims(next);
   };
 
   const handleSubmit = async (e: React.FormEvent, forceNewBase = false) => {
@@ -133,14 +84,19 @@ export default function EditEntityPage() {
     setErrorMessage(null);
     setConflictModal(false);
 
-    const cleanedClaims = claims
-      .filter((c) => c.use.trim().length > 0)
-      .map((c) => ({
-        ...c,
-        tool: c.tool?.trim() || undefined,
-        note: c.note?.trim() || undefined,
-        sources: (c.sources || []).filter((s) => s.url.trim().length > 0),
-      }));
+    const cleanedClaims = cleanClaimsForSubmit(claims);
+
+    if (cleanedClaims.length === 0) {
+      setErrorMessage('Add at least one claim with a use case and supporting evidence.');
+      setSaving(false);
+      return;
+    }
+
+    if (cleanedClaims.some((c) => !c.sources.length)) {
+      setErrorMessage('Each claim needs at least one evidence source URL.');
+      setSaving(false);
+      return;
+    }
 
     const updatedContent: RevisionContent = {
       name,
@@ -340,107 +296,7 @@ export default function EditEntityPage() {
 
           {/* Claims — evidenced use cases */}
           <div className="space-y-4 rounded-[6px] bg-white border border-[#E3E5E9] p-5 sm:p-6 shadow-[0_1px_2px_rgba(30,42,58,0.05)]">
-            <div className="flex items-center justify-between border-b border-[#E3E5E9] pb-3">
-              <div>
-                <h3 className="serif text-[18px] sm:text-[19px] font-semibold text-[#1E2A3A]">2. AI Use Cases & Evidence</h3>
-                <p className="text-[12px] text-[#8A93A3] mt-0.5">Each claim gets its own use case label, optional tool, and directly attached evidence.</p>
-              </div>
-              <button
-                type="button"
-                onClick={addClaim}
-                className="flex items-center gap-1 text-xs font-semibold text-[#3F4FBF] hover:underline shrink-0"
-              >
-                <Plus className="w-4 h-4" /> Add Claim
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {claims.map((claim, ci) => (
-                <div key={ci} className="rounded-[6px] border border-[#E3E5E9] overflow-hidden">
-                  {/* Claim header row */}
-                  <div className="bg-[#F8F9FB] px-4 py-3 border-b border-[#E3E5E9] flex items-center justify-between gap-2">
-                    <span className="text-[11.5px] font-semibold text-[#8A93A3] uppercase tracking-wider">Claim #{ci + 1}</span>
-                    {claims.length > 1 && (
-                      <button type="button" onClick={() => removeClaim(ci)} className="text-xs text-[#A85238] hover:underline">Remove</button>
-                    )}
-                  </div>
-                  <div className="p-4 space-y-3 bg-white">
-                    {/* Use + Tool row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">Use Case *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Customer Service Automation"
-                          value={claim.use}
-                          onChange={(e) => updateClaim(ci, 'use', e.target.value)}
-                          className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">AI Tool (optional)</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Microsoft Copilot"
-                          value={claim.tool || ''}
-                          onChange={(e) => updateClaim(ci, 'tool', e.target.value)}
-                          className="mono w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    {/* Note */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider mb-1">Brief description (optional)</label>
-                      <input
-                        type="text"
-                        placeholder="One sentence describing what this does"
-                        value={claim.note || ''}
-                        onChange={(e) => updateClaim(ci, 'note', e.target.value)}
-                        className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-sm text-[#1E2A3A] placeholder:text-[#8A93A3] focus:border-[#3F4FBF] focus:outline-none"
-                      />
-                    </div>
-                    {/* Sources for this claim */}
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-[#8A93A3] uppercase tracking-wider">Evidence</span>
-                        <button type="button" onClick={() => addClaimSource(ci)} className="text-[11px] font-semibold text-[#3F4FBF] hover:underline">+ Add source</button>
-                      </div>
-                      {(claim.sources || []).map((src, si) => (
-                        <div key={si} className="flex gap-2 items-start">
-                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              placeholder="Source title"
-                              value={src.title}
-                              onChange={(e) => updateClaimSource(ci, si, 'title', e.target.value)}
-                              className="w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] focus:outline-none"
-                            />
-                            <input
-                              type="url"
-                              placeholder="https://..."
-                              value={src.url}
-                              onChange={(e) => updateClaimSource(ci, si, 'url', e.target.value)}
-                              className="mono w-full rounded bg-[#F8F9FB] border border-[#E3E5E9] px-3 py-1.5 text-xs text-[#1E2A3A] placeholder:text-[#8A93A3] focus:outline-none"
-                            />
-                          </div>
-                          <button type="button" onClick={() => removeClaimSource(ci, si)} className="mt-1.5 text-[#A85238] hover:text-[#8B3220]">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={addClaim}
-              className="w-full py-2.5 rounded border border-dashed border-[#E3E5E9] text-[13px] text-[#8A93A3] hover:border-[#3F4FBF] hover:text-[#3F4FBF] transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Add another claim
-            </button>
+            <ClaimFormEditor claims={claims} entityName={name} onChange={setClaims} />
           </div>
 
           {/* Audit Trail Metadata */}

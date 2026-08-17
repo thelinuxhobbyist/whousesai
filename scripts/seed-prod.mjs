@@ -5,7 +5,7 @@
  * Run: node scripts/seed-prod.mjs
  */
 
-const BASE_URL = 'https://whousesai.yama-builds.workers.dev';
+const BASE_URL = process.env.BASE_URL || 'https://whousesai.yama-builds.workers.dev';
 
 const entities = [
   {

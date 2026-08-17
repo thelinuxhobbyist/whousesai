@@ -10,20 +10,20 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import { siteAssets } from '@/lib/site-assets';
+import { SITE_NAME, siteAssets } from '@/lib/site-assets';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="border-b border-[#E3E5E9] bg-white py-3.5 sticky top-0 z-40 shadow-[0_1px_3px_rgba(30,42,58,0.03)]">
+    <nav className="border-b border-[#E3E5E9] bg-white py-2.5 md:py-3 sticky top-0 z-40 shadow-[0_1px_3px_rgba(30,42,58,0.03)]">
       <div className="max-w-[1180px] mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center group">
           <img
             src={siteAssets.logo.svg}
-            alt="WhoUsesAI"
-            className="h-[41px] w-auto"
+            alt={SITE_NAME}
+            className="h-[52px] w-auto md:h-[96px]"
           />
         </Link>
 
