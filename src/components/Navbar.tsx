@@ -48,7 +48,7 @@ export default function Navbar() {
             className="text-[#5B6472] hover:text-[#3F4FBF] transition-colors flex items-center gap-2 font-medium"
           >
             <Layers className="w-4 h-4 text-[#8A93A3]" />
-            AI Tools
+            Browse by Tool
           </Link>
           <Link
             href="/add"
@@ -94,7 +94,7 @@ export default function Navbar() {
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[14.5px] text-[#1E2A3A] hover:bg-[#F8F9FB] font-medium transition-colors"
           >
             <Layers className="w-4 h-4 text-[#3F4FBF]" />
-            AI Tools Directory
+            Browse by Tool
           </Link>
           <div className="pt-2 border-t border-[#E3E5E9]">
             <Link

@@ -14,6 +14,14 @@ export interface ToolGroup {
   entities: ToolEntity[];
 }
 
+/** Stable hash id for `/tools#tool-…` deep links from claim cards. */
+export function toolAnchor(tool: string): string {
+  return tool
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export function groupEntitiesByTool(entities: Entity[]): ToolGroup[] {
   const byTool = new Map<string, Map<number, ToolEntity>>();
 

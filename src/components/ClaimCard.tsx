@@ -14,10 +14,7 @@ import {
 import EvidenceStatusBadge from '@/components/EvidenceStatusBadge';
 import { Claim, EntityReport, EvidenceStatus } from '@/lib/types';
 import { claimStatement, formatLongDate } from '@/lib/evidence';
-
-function toolAnchor(tool: string) {
-  return tool.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
+import { toolAnchor } from '@/lib/tools-index';
 
 interface ClaimCardProps {
   claim: Claim;
