@@ -14,7 +14,7 @@ import {
 import EvidenceStatusBadge from '@/components/EvidenceStatusBadge';
 import { Claim, EntityReport, EvidenceStatus } from '@/lib/types';
 import { claimStatement, formatLongDate } from '@/lib/evidence';
-import { toolAnchor } from '@/lib/tools-index';
+import { toolSlug } from '@/lib/tools-index';
 
 interface ClaimCardProps {
   claim: Claim;
@@ -79,7 +79,7 @@ export default function ClaimCard({
               <Tag className="w-3 h-3" /> Tool
             </span>
             <Link
-              href={`/tools#tool-${toolAnchor(claim.tool)}`}
+              href={`/tools/${toolSlug(claim.tool)}`}
               className="mono inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EEEDFE] text-[#3F4FBF] border border-[#3F4FBF]/20 text-[12.5px] font-semibold hover:border-[#3F4FBF] transition-colors"
             >
               {claim.tool}

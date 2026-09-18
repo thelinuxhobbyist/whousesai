@@ -13,6 +13,9 @@ import {
 import { normalizeEntityType, shouldAutoMigrateType } from './entityTypes';
 import { buildRevertEditSummary } from './revisionLabels';
 import { needsClaimsMigration, normalizeRevisionContent } from './evidence';
+import { slugify } from './slug';
+
+export { slugify } from './slug';
 
 export interface CreateRevisionOptions {
   editSummary: string;
@@ -1050,12 +1053,3 @@ function mapRevisionRow(row: any): EntityRevision {
   };
 }
 
-export function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-');
-}

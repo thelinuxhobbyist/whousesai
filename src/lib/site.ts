@@ -19,6 +19,10 @@ export function publicEntityApiUrl(slug: string): string {
   return absoluteUrl(`/api/public/entities/${slug}`);
 }
 
+export function toolUrl(slug: string): string {
+  return absoluteUrl(`/tools/${slug}`);
+}
+
 /** Paths that must not be indexed and are not part of the public knowledge base. */
 export const PRIVATE_ROBOTS_PATHS = [
   '/admin',

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getEntities } from '@/lib/db';
-import { entityHistoryUrl, entityUrl, SITE_URL } from '@/lib/site';
+import { entityHistoryUrl, entityUrl, SITE_URL, toolUrl } from '@/lib/site';
+import { groupEntitiesByTool } from '@/lib/tools-index';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified,
         changeFrequency: 'weekly',
         priority: 0.5,
+      });
+    }
+
+    for (const tool of groupEntitiesByTool(entities)) {
+      entries.push({
+        url: toolUrl(tool.slug),
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
       });
     }
   } catch (error) {
