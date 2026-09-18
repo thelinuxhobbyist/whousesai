@@ -1,49 +1,29 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import Link from 'next/link';
+import { getEntities } from '@/lib/db';
+import { groupEntitiesByTool } from '@/lib/tools-index';
+import { SITE_NAME } from '@/lib/site-assets';
+import { SITE_URL } from '@/lib/site';
 import {
   ArrowRight,
   ExternalLink,
   Layers,
 } from 'lucide-react';
 
-interface ToolGroup {
-  tool: string;
-  entities: {
-    id: number;
-    slug: string;
-    name: string;
-    type: string;
-    industry: string;
-    uses: string[];
-  }[];
-}
+export const dynamic = 'force-dynamic';
 
-export default function ToolsIndexPage() {
-  const [tools, setTools] = useState<ToolGroup[]>([]);
-  const [loading, setLoading] = useState(true);
+export const metadata: Metadata = {
+  title: 'AI tools index',
+  description: `Every AI tool documented in the ${SITE_NAME} directory, mapped to the organisations using it.`,
+  alternates: { canonical: `${SITE_URL}/tools` },
+  robots: { index: true, follow: true },
+};
 
-  useEffect(() => {
-    fetchTools();
-  }, []);
-
-  const fetchTools = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/tools');
-      const data = await res.json();
-      if (data.success) {
-        setTools(data.tools);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default async function ToolsIndexPage() {
+  const entities = await getEntities();
+  const tools = groupEntitiesByTool(entities);
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#1E2A3A] flex flex-col font-sans">
@@ -60,13 +40,7 @@ export default function ToolsIndexPage() {
           </p>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-48 rounded bg-white border border-[#E3E5E9] animate-pulse" />
-            ))}
-          </div>
-        ) : tools.length > 0 ? (
+        {tools.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tools.map((item) => (
               <div

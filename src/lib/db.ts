@@ -1,4 +1,3 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import {
   Entity,
   EntityRevision,
@@ -42,9 +41,21 @@ interface SqlDb {
 
 let localDbPromise: Promise<SqlDb> | null = null;
 let d1ReadyPromise: Promise<SqlDb> | null = null;
+let resolvedDb: SqlDb | null = null;
+
+function isCloudflareWorkerRuntime(): boolean {
+  return typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === 'function';
+}
 
 async function getD1Binding(): Promise<D1Database | null> {
+  // next dev / next start should use local SQLite. Importing OpenNext's
+  // Cloudflare context outside workerd hangs generateMetadata for a long time.
+  if (process.env.NODE_ENV === 'development' || !isCloudflareWorkerRuntime()) {
+    return null;
+  }
+
   try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
     const ctx = await getCloudflareContext({ async: true });
     const env = ctx.env as Env;
     return env.whousesai_db ?? null;
@@ -107,31 +118,32 @@ async function createLocalSqliteDb(): Promise<SqlDb> {
     fs.mkdirSync(dataDir, { recursive: true });
   }
   const dbPath = path.join(dataDir, 'whousesai.sqlite');
-  const sqlite = new Database(dbPath);
+  const sqlite = new Database(dbPath, { timeout: 5000 });
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
 
   const db = createSqliteAdapter(sqlite);
+  // Nested getDb() calls during initTables (migrations) must see this adapter
+  // immediately, otherwise they wait on the still-unresolved init promise.
+  resolvedDb = db;
   await initTables(db);
   return db;
 }
 
 async function getDb(): Promise<SqlDb> {
-  // next dev should use local SQLite. The OpenNext D1 binding in `next dev`
-  // is an empty local database and would hide the directory.
-  const useLocalSqlite = process.env.NODE_ENV === 'development';
-  if (!useLocalSqlite) {
-    const d1 = await getD1Binding();
-    if (d1) {
-      if (!d1ReadyPromise) {
-        d1ReadyPromise = (async () => {
-          const adapter = createD1Adapter(d1);
-          await initTables(adapter);
-          return adapter;
-        })();
-      }
-      return d1ReadyPromise;
+  if (resolvedDb) return resolvedDb;
+
+  const d1 = await getD1Binding();
+  if (d1) {
+    if (!d1ReadyPromise) {
+      d1ReadyPromise = (async () => {
+        const adapter = createD1Adapter(d1);
+        resolvedDb = adapter;
+        await initTables(adapter);
+        return adapter;
+      })();
     }
+    return d1ReadyPromise;
   }
 
   if (!localDbPromise) {

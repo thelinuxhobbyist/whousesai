@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -42,7 +42,6 @@ export default function ClaimCard({
   onChallenge,
   onOrgResponse,
 }: ClaimCardProps) {
-  const [expandedResponseId, setExpandedResponseId] = useState<number | null>(null);
   const isDisputed = challenges.length > 0;
 
   return (
@@ -123,39 +122,32 @@ export default function ClaimCard({
           </div>
         </div>
 
-        {orgResponses.map((response) => {
-          const expanded = expandedResponseId === response.id;
-          return (
-            <div
+        {orgResponses.map((response) => (
+            <details
               key={response.id}
               className="rounded border border-[#E3E5E9] bg-[#F8F9FB] px-3 py-2.5 text-[13px]"
             >
-              <p className="font-semibold text-[#1E2A3A] flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-[#3F4FBF]" />
-                Organisation response
-              </p>
-              <p className="mt-1 text-[#5B6472]">
-                {entityName} {responseReasonVerb(response.reason)} on {formatLongDate(response.created_at)}.
-              </p>
-              <button
-                type="button"
-                onClick={() => setExpandedResponseId(expanded ? null : response.id)}
-                className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#3F4FBF] hover:underline"
-              >
-                {expanded ? 'Hide response' : 'View response and evidence'}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              {expanded && (
-                <div className="mt-2 pt-2 border-t border-[#E3E5E9] space-y-1.5 text-[#5B6472]">
-                  <p>
-                    <span className="font-medium text-[#1E2A3A]">Reason:</span> {response.reason}
-                  </p>
-                  <p className="whitespace-pre-line">{response.details}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+              <summary className="cursor-pointer list-none">
+                <p className="font-semibold text-[#1E2A3A] flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-[#3F4FBF]" />
+                  Organisation response
+                </p>
+                <p className="mt-1 text-[#5B6472]">
+                  {entityName} {responseReasonVerb(response.reason)} on {formatLongDate(response.created_at)}.
+                </p>
+                <span className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#3F4FBF]">
+                  View response and evidence
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </summary>
+              <div className="mt-2 pt-2 border-t border-[#E3E5E9] space-y-1.5 text-[#5B6472]">
+                <p>
+                  <span className="font-medium text-[#1E2A3A]">Reason:</span> {response.reason}
+                </p>
+                <p className="whitespace-pre-line">{response.details}</p>
+              </div>
+            </details>
+          ))}
       </div>
 
       <div className="border-t border-[#E3E5E9] bg-[#F8F9FB] px-5 sm:px-6 py-3 flex flex-wrap items-center gap-3">
